@@ -14,7 +14,6 @@ class Socket:
     def send(self, message, dest):
         pack = PacketBuilder().buildEth().buildIp6().buildUdp().buildMsg(message).pack()
         self.s.sendto(pack, (dest, 0))
-        
 
     def receive(self, packetFilter):
         pack = PacketBuilder().unpack(self.s.recv(2048))
