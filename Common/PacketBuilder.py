@@ -3,10 +3,14 @@ class PacketBuilder:
     def __init__(self):
         self.p = Packet()
 
-    def buildEth(self):
+    def buildEth(self, src_mac, dst_mac):
+        self.p.eth.setDst(dst_mac)
+        self.p.eth.setSrc(src_mac)
         return self
 
-    def buildIp6(self):
+    def buildIp6(self, src_addr, dst_addr):
+        self.p.ip6.setDst(dst_addr)
+        self.p.ip6.setSrc(src_addr)
         return self
 
     def buildUdp(self):
@@ -14,6 +18,8 @@ class PacketBuilder:
 
     def buildMsg(self, message):
         self.p.msg = message
+        self.p.udp.length += len(message)
+        self.p.ip6.payload += len(message)
         return self
 
     def unpack(self, pack):
