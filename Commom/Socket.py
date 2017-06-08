@@ -8,7 +8,7 @@ class Socket:
         try:
             #s = socket.socket(socket.AF_INET6, socket.SOCK_RAW)
             #socket.ntohs(0x0003) --> ETH_P_ALL
-            s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
+            self.s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
         except socket.error, msg:
             print 'Socket could not be created. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
             sys.exit()
@@ -23,7 +23,8 @@ class Socket:
         self.s.sendto(pack, connection_info.dst_ip)
 
     def receive(self, packetFilter):
-        pack = PacketBuilder().unpack(self.s.recv(2048))
-        if not packetFilter.filter(pack):
-            return pack
-        return None
+        network_data = self.s.recv(2048)
+        if network_data and packetFilter.filter(network_data):
+            #return PacketBuilder().unpack(network_data)
+            return True
+        return False

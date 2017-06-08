@@ -1,15 +1,22 @@
-from Common.Socket import *
-from Common.Packet import *
-from Common.ConnectionInfo import *
-
-def filter(packet):
-    packet = Packet()
-    return packet.ip6 == ""
+from Commom.Socket import *
+from Commom.Packet import *
+from Commom.ConnectionInfo import *
+from Commom.Debug import *
 
 def main():
-    info = ConnectionInfo("", "", "", "")
-    filterObj = PacketFilter(filter)
-    socket = Socket()
+    debug_print("Iniciado...")
+
+    info = ConnectionInfo("", "", "192.168.15.32", "192.168.15.34")
+    filterObj = PacketFilter(filter, info)
+    s = Socket()
+    debug_print("Socket criado...")
+
+    debug_print("Recebendo dados...")
+    while True:
+        if s.receive(filterObj):
+            debug_print("Recebi PING")
+
+    debug_print("Finalizado...")
 
 if __name__ =="__main__":
     main()
