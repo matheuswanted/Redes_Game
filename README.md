@@ -18,3 +18,26 @@
     seja em uma caixa, cofre, armário etc. Somente quando estiver com esse ítem em mãos a porta 
     poderá ser aberta. Cada pessoa precisa da chave correta para sair da sala, 
     independentemente de outra pessoa ter encontrado a chave antes. 
+    
+### Calabouço  - Sala 1 
+    Objetos: Uma cama com colchão e sem lençol;
+             Um jarro de cheio de água
+             Um copo de plástico
+             Uma chave que abre a porta de saída da sala 1 (1S)
+             
+    * Onde está a chave: Dentro do jarro de água
+    * Como pegar a chave: PEGAR o jarro;
+                          USAR jarro copo. 
+    
+### Sala de tortura - Sala 2 
+    Objetos: Uma cadeira de ferro;
+             Um equipamento de choque;
+             Um saco de roupas sujas;
+             Uma chave que abre a porta de saída da sala 2 (2S)
+        
+    * Onde está a chave: 
+    * Como pegar a chave: ;
+                          ;
+             
+     
+    
