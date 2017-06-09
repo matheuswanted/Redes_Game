@@ -21,21 +21,30 @@ class PacketBuilder:
         self.p.udp.length += len(message)
         self.p.ip6.payload += len(message)
         return self
+    
+    def unpack_eth(self, data):
+        data_len = len(data)
+        if data_len < 14:
+            raise Exception('Wrong size ethernet packet!')
+        elif data_len > 14 :
+            data = data[0:14]
+        self.p.eth.unpack(data)
 
-    def unpack(self, pack):
-        ethStart = 0
-        ethEnd = 14
+    def unpack_ipv6(self, data):
+        data_len = len(data)
+        if data_len < 40:
+            raise Exception('Wrong size ipv6 packet!')
+        elif data_len > 40 :
+            data = data[14:54]
+        self.p.ip6.unpack(data)
 
-        ip6Start = 0
-        ip6End = 14
-
-        udpStart = 0
-        udpEnd = 14
-
-        msgStart = 0
-        msgEnd = 14
-
-        return self.p.unpack(pack[ethStart:ethEnd], pack[ip6Start:ip6End], pack[udpStart:udpEnd], pack[msgStart:msgEnd])
+    def unpack_udp(self, data):
+        data_len = len(data)
+        if data_len < 8:
+            raise Exception('Wrong size udp packet!')
+        elif data_len > 8 :
+            data = data[54:62]
+        self.p.udp.unpack(data)
 
     def pack(self):
         return self.p.pack()

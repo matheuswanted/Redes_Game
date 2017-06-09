@@ -16,15 +16,17 @@ class Socket:
     def send(self, message, connection_info):
         #removed buildUdp, fixed packet
         data_pack = PacketBuilder()
-        data_pack = data_pack.buildEth(connection_info.src_mac, connection_info.dst_mac)
-        data_pack = data_pack.buildIp6(connection_info.src_ip, connection_info.dst_ip)
-        data_pack = data_pack.buildMsg(message)
+        data_pack.buildEth(connection_info.src_mac, connection_info.dst_mac)
+        data_pack.buildIp6(connection_info.src_ip, connection_info.dst_ip)
+        data_pack.buildMsg(message)
         data_pack = data_pack.pack()
-        self.s.sendto(pack, connection_info.dst_ip)
+        self.s.sendto(data_pack, connection_info.dst_ip)
 
     def receive(self, packetFilter):
         network_data = self.s.recv(2048)
-        if network_data and packetFilter.filter(network_data):
+        builder = PacketBuilder()
+        if network_data and packetFilter.filter(builder, network_data):
             #return PacketBuilder().unpack(network_data)
+
             return True
         return False

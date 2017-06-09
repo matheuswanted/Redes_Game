@@ -3,11 +3,14 @@ from Commom.Packet import *
 from Commom.ConnectionInfo import *
 from Commom.Debug import *
 
+def to_net_addr(addr):
+    return socket.inet_pton(socket.AF_INET6,addr)
+
 def main():
     debug_print("Iniciado...")
 
-    info = ConnectionInfo("", "", "192.168.15.32", "192.168.15.34")
-    filterObj = PacketFilter(filter, info)
+    info = ConnectionInfo("", "", to_net_addr("2001:db8:800:200c:a046:eabe:fa9d:23c7"), to_net_addr("2001:db8:800:200c:a046:eabe:fa9d:23c8"))
+    filterObj = PacketFilter(info)
     s = Socket()
     debug_print("Socket criado...")
 
