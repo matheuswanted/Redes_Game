@@ -31,10 +31,10 @@ class IPV6:
         self.dst_addr = None
 
     def setSrc(self, addr):
-        self.src_addr = socket.inet_pton(addr, socket.AF_INET6)
+        self.src_addr = addr#socket.inet_pton(addr, socket.AF_INET6)
 
     def setDst(self, addr):
-        self.dst_addr = socket.inet_pton(addr, socket.AF_INET6)
+        self.dst_addr = addr#socket.inet_pton(addr, socket.AF_INET6)
 
     def pack(self):
         return pack('!BBHHBB16s16s', self.version, self.traffic_class, self.flow_label, self.payload, self.next_header, self.hop_limit, self.src_addr, self.dst_addr)
@@ -53,7 +53,7 @@ class Udp:
         return pack('!HHHH', self.src_port, self.dst_port, self.length, self.checksum)
     
     def unpack(self, data):
-        self.src_port, self.dst_port, self.length, self.checksum = ubpack('!HHHH', data)
+        self.src_port, self.dst_port, self.length, self.checksum = unpack('!HHHH', data)
 
 class Packet:
     def __init__(self):
@@ -65,7 +65,7 @@ class Packet:
 
     def pack(self):
         #return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg.pack()
-        return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg
+        return self.eth.pack() + self.ip6.pack() + self.udp.pack()# + self.msg
 
     def unpack(self, eth, ip6, udp, msg):
         #self.eth = Eth().unpack(eth)
