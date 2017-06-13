@@ -78,6 +78,5 @@
     * Onde está a chave: 
     * Como pegar a chave: 
                           
-             
-     
-    
+#VSCode como root
+sudo code --user-data-dir="~/.vscode-root"
