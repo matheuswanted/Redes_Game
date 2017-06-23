@@ -24,6 +24,7 @@
              Um jarro de cheio de água
              Um copo de plástico
              Uma chave que abre a porta de saída da sala 1 (1S)
+             Uma porta de ferro de saída
              
     * Onde está a chave: Dentro do jarro de água
     * Como pegar a chave: PEGAR o jarro;
@@ -38,7 +39,9 @@
              Uma caixa de fósforos;
              Uma vela acesa;
              Um martelo;
-             Uma chave que abre a porta de saída da sala 2 (2S)  
+             Uma chave que abre a porta de saída da sala 2 (2S)
+             Uma porta de ferro de saída
+
              
     * Onde está a chave: Dentro da caixa de fósforos
     * Como pegar a chave: PEGAR caixa de fósforos;
@@ -50,7 +53,8 @@
              Um parede cheia de quadros;
              Um cristaleira com portas cadeadas;
              Um machado no chão;
-             Uma chave que abre a porta de saída da sala 3 (3S)  
+             Uma chave que abre a porta de saída da sala 3 (3S)
+             Uma porta de madeira de saída
 
              
     * Onde está a chave: Dentro da cristaleira 
@@ -65,6 +69,7 @@
              Uma chave que abre a porta de saída da sala 4 (4S)
              Uma chaleira em cima do fogão a lenha
              Uma gaveta entreaberta
+             Uma porta de saída
 
              
     * Onde está a chave: Dentro da gaveta
