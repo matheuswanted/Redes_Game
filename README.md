@@ -24,10 +24,11 @@
              Um jarro de cheio de água
              Um copo de plástico
              Uma chave que abre a porta de saída da sala 1 (1S)
+             Uma porta de ferro de saída
              
     * Onde está a chave: Dentro do jarro de água
     * Como pegar a chave: PEGAR o jarro;
-                          USAR jarro copo. 
+                          USAR [jarro] {copo} 
     
 ### Sala de Tortura - Sala 2 
     Objetos: Uma cadeira de ferro;
@@ -38,11 +39,13 @@
              Uma caixa de fósforos;
              Uma vela acesa;
              Um martelo;
-             Uma chave que abre a porta de saída da sala 2 (2S)  
+             Uma chave que abre a porta de saída da sala 2 (2S)
+             Uma porta de ferro de saída
+
              
     * Onde está a chave: Dentro da caixa de fósforos
     * Como pegar a chave: PEGAR caixa de fósforos;
-                          Usar caixa de fósforos;
+                          Usar [caixa de fósforos] (abrir caixa de fósforos)
 
 ### Sala de Jandar - Sala 3 
     Objetos: Uma mesa com pratos quebrados;
@@ -50,23 +53,27 @@
              Um parede cheia de quadros;
              Um cristaleira com portas cadeadas;
              Um machado no chão;
-             Uma chave que abre a porta de saída da sala 3 (3S)  
+             Uma chave que abre a porta de saída da sala 3 (3S)
+             Uma porta de madeira de saída
 
              
     * Onde está a chave: Dentro da cristaleira 
     * Como pegar a chave: PEGAR machado
-                          USAR machado cristaleira
+                          USAR [machado] {cristaleira}
                           
 ### Cozinha - Sala 4 
     Objetos: Um fogão a lenha;
              Uma pilha de lenha no canto da sala
              Facas espalhadas pelo chão;
              Garfos fincados em frutas em cima da mesa;
-             Uma chave que abre a porta de saída da sala 4 (4S)  
+             Uma chave que abre a porta de saída da sala 4 (4S)
+             Uma chaleira em cima do fogão a lenha
+             Uma gaveta entreaberta
+             Uma porta de saída
 
              
-    * Onde está a chave: 
-    * Como pegar a chave: 
+    * Onde está a chave: Dentro da gaveta
+    * Como pegar a chave: USAR [gaveta]  
                                                     
 
 ### Jardim dos Fundos do Castelo - Sala 5 
@@ -74,9 +81,13 @@
              Uma caixa de ferramentas;
              Um portão de ferro (saída);
              Uma árvore sem folhas;
+             Um limpador de piscina;
+             Uma chave que abre o portão de saída do castelo (5S)
+
              
-    * Onde está a chave: 
-    * Como pegar a chave: 
+    * Onde está a chave: Dentro da fonte
+    * Como pegar a chave: PEGAR limpador de piscina
+                          USAR [limpador de psicina] {fonte}
                           
 #VSCode como root
 sudo code --user-data-dir="~/.vscode-root"
