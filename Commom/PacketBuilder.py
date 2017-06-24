@@ -1,11 +1,12 @@
 from Packet import *
+
 class PacketBuilder:
     def __init__(self):
         self.p = Packet()
 
     def buildEth(self, src_mac, dst_mac):
-        self.p.eth.setDst(dst_mac)
         self.p.eth.setSrc(src_mac)
+        self.p.eth.setDst(dst_mac)
         return self
 
     def buildIp6(self, src_addr, dst_addr):
@@ -45,6 +46,9 @@ class PacketBuilder:
         elif data_len > 8 :
             data = data[54:62]
         self.p.udp.unpack(data)
+
+    def get_message(self, data):
+        return data[62:]
 
     def pack(self):
         return self.p.pack()

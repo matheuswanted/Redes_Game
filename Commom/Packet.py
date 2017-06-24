@@ -5,7 +5,7 @@ class Ethernet:
     def __init__(self):
         self.src = None
         self.dst = None
-        self.eth_type = 34525 #86DD - ipv6
+        self.eth_type = 34525 #86dd - ipv6
 
     def setSrc(self, src):
         self.src = src
@@ -14,7 +14,7 @@ class Ethernet:
         self.dst = dst
 
     def pack(self):
-        return pack('!6s6sH', self.src, self.dst, self.eth_type)
+        return pack('!6s6sH', self.dst, self.src, self.eth_type)
 
     def unpack(self,data):
         self.dst, self.src, self.eth_type = unpack("!6s6sH",data)
@@ -31,10 +31,10 @@ class IPV6:
         self.dst_addr = None
 
     def setSrc(self, addr):
-        self.src_addr = addr#socket.inet_pton(addr, socket.AF_INET6)
+        self.src_addr = addr
 
     def setDst(self, addr):
-        self.dst_addr = addr#socket.inet_pton(addr, socket.AF_INET6)
+        self.dst_addr = addr
 
     def pack(self):
         return pack('!BBHHBB16s16s', self.version, self.traffic_class, self.flow_label, self.payload, self.next_header, self.hop_limit, self.src_addr, self.dst_addr)
@@ -47,7 +47,7 @@ class Udp:
         self.src_port = 16261
         self.dst_port = 9309
         self.length = 8
-        self.checksum = 0
+        self.checksum = 0xffff
 
     def pack(self):
         return pack('!HHHH', self.src_port, self.dst_port, self.length, self.checksum)
@@ -64,12 +64,4 @@ class Packet:
         self.ip6.payload += self.udp.length
 
     def pack(self):
-        #return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg.pack()
-        return self.eth.pack() + self.ip6.pack() + self.udp.pack()# + self.msg
-
-    def unpack(self, eth, ip6, udp, msg):
-        #self.eth = Eth().unpack(eth)
-        #self.ip6 = Ip6().unpack(ip6)
-        #self.udp = Udp().unpack(udp)
-        #self.msg = Msg().unpack(msg)
-        return self
+        return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg
