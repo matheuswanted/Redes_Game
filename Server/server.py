@@ -11,6 +11,50 @@ class Server:
 
         self.init_rooms()
 
+        self.queue = Queue()
+        self.s = Socket()
+
+    def start(self):
+        thread.start_new_thread(receiver,(self))
+        while True:
+            message = self.queue.get(True)
+            self.queue.task_done()
+            self.handle(message)
+
+    def handle(self, message):
+        message = ''
+        if message.msg.action == 'join':
+            self.login_player(message.msg.player, message.ip6.src_addr)
+        elif message.msg.action == 'check':
+            pass
+        elif message.msg.action == 'move':
+            pass
+        elif message.msg.action == 'take':
+            pass
+        elif message.msg.action == 'drop':
+            pass
+        elif message.msg.action == 'inventory':
+            pass
+        elif message.msg.action == 'use':
+            pass
+        elif message.msg.action == 'speak':
+            pass
+        elif message.msg.action == 'whisper':
+            pass
+
+        self.s.send(message)
+            
+
+    def receiver(self):
+        info = ConnectionInfo(to_mac_str('4c:eb:42:36:49:94'), to_mac_str('08:00:27:c0:8e:ad'), to_net_addr("fe80::1c10:334e:4ab2:af3d"), to_net_addr("fe80::42e6:72aa:2c16:5041"))
+        filterObj = PacketFilter(info)
+        s = Socket()
+        while True:
+            data = s.receive(filterObj)
+            if data:
+                self.queue.put_nowait(data)
+
+
     def init_rooms(self):
         r = Room("Calabouco")
         r.add_item(Item(1, "Cama com colchao", False, None))
@@ -37,7 +81,7 @@ class Server:
         r.add_item(Item(19, "Machado", False, None))
         self.rooms.append(copy.copy(r))
 
-        r = Room("Cozinha")
+        r = Room("Cozinha")check
         r.add_item(Item(20, "Fogao a lenha", False, None))
         r.add_item(Item(21, "Pilha de lenha no canto da sala", False, None))
         r.add_item(Item(22, "Facas espalhadas pelo chao", False, None))
@@ -100,7 +144,7 @@ class Server:
         # TODO
         pass
 
-    def speek(self, message):
+    def speak(self, message):
         # TODO
         pass
 
@@ -114,3 +158,4 @@ if __name__ == "__main__":
     serv.login_player("Almir", "xalala")
 
     serv.check("xalala", 2)
+    serv.start()

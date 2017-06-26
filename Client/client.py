@@ -1,9 +1,9 @@
-
+import thread
 class Client:
 
     def __init__(self):
 
-        x = ""
+        self.x = ""
 
     def help(self):
         # TODO: listar todos os comandos
@@ -33,6 +33,8 @@ class Client:
         print "     o Lista todos os comandos possiveis do jogo." 
     
 if __name__ == "__main__":
-    Client().help()
+    c = Client()
+    c.help()
+
 
     
