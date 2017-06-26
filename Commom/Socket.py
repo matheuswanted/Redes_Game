@@ -35,7 +35,7 @@ class Socket:
 
         builder = PacketBuilder()
         if network_data and packetFilter.filter(builder, network_data):
-            return builder.get_message(network_data)
+            return builder.get_message(), builder.get_connection_info()
 
         return False
 

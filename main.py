@@ -2,13 +2,10 @@ from Commom.Socket import *
 from Commom.Packet import *
 from Commom.ConnectionInfo import *
 from Commom.Debug import *
+from Commom.Utils import *
 import socket
 
-def to_net_addr(addr):
-    return socket.inet_pton(socket.AF_INET6, addr)
 
-def to_mac_str(addr):
-    return addr.replace(':', '').decode('hex')
 
 def main(argv):
     debug_print("Iniciado...")

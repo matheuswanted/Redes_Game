@@ -23,7 +23,7 @@ class PacketFilter:
         pack_builder.unpack_udp(network_data)
         if not self.filter_game_packet(pack_builder.p.udp):
             return False
-        
+        pack_builder.unpack_message(network_data)
         return True
 
     def filter_ipv6(self, ethernet):
@@ -39,7 +39,7 @@ class PacketFilter:
         return udp.src_port == 16261 and udp.dst_port == 9309
 
     def filter_dst_src(self, ip6):
-        return self.connection.src_ip == ip6.dst_addr and self.connection.dst_ip == ip6.src_addr
+        return self.connection.src_ip == ip6.dst_addr and (self.connection.dst_ip == 0 or self.connection.dst_ip == ip6.src_addr)
 
     def filter_ping(self,pack_builder):
         protocol = unpack("!B", network_data[23])[0]

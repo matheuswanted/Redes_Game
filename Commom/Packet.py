@@ -55,13 +55,26 @@ class Udp:
     def unpack(self, data):
         self.src_port, self.dst_port, self.length, self.checksum = unpack('!HHHH', data)
 
+class AppMessage:
+    def __init__(self, action=None):
+        self.action = action
+
+    def pack(self):
+        return pack('!B',self.action)
+
+    def unpack(self, msg):
+        self.action = unpack('!B',msg)
+
 class Packet:
     def __init__(self):
         self.eth = Ethernet()
         self.ip6 = IPV6()
         self.udp = Udp()
-        self.msg = None
+        self.msg = AppMessage()
         self.ip6.payload += self.udp.length
 
     def pack(self):
-        return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg
+        return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg.pack()
+
+    def get_connection_info(self):
+        return None

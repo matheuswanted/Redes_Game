@@ -47,8 +47,14 @@ class PacketBuilder:
             data = data[54:62]
         self.p.udp.unpack(data)
 
+    def unpack_message(self,message):
+        self.p.msg.unpack(data[62:])
+
     def get_message(self, data):
-        return data[62:]
+        return self.p.msg
+
+    def get_connection_info(self):
+        return self.p.get_connection_info()
 
     def pack(self):
         return self.p.pack()
