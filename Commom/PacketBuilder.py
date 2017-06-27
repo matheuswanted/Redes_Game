@@ -1,4 +1,6 @@
 from Packet import *
+import sys
+
 
 class PacketBuilder:
     def __init__(self):
@@ -18,16 +20,19 @@ class PacketBuilder:
         return self
 
     def buildMsg(self, message):
+        size = sys.getsizeof(message.pack())
+        #print "size: " + str(size)
+        #print "msg: " + str(message)
         self.p.msg = message
-        self.p.udp.length += len(message)
-        self.p.ip6.payload += len(message)
+        self.p.udp.length += size
+        self.p.ip6.payload += self.p.udp.length
         return self
-    
+
     def unpack_eth(self, data):
         data_len = len(data)
         if data_len < 14:
             raise Exception('Wrong size ethernet packet!')
-        elif data_len > 14 :
+        elif data_len > 14:
             data = data[0:14]
         self.p.eth.unpack(data)
 
@@ -35,7 +40,7 @@ class PacketBuilder:
         data_len = len(data)
         if data_len < 40:
             raise Exception('Wrong size ipv6 packet!')
-        elif data_len > 40 :
+        elif data_len > 40:
             data = data[14:54]
         self.p.ip6.unpack(data)
 
@@ -43,14 +48,14 @@ class PacketBuilder:
         data_len = len(data)
         if data_len < 8:
             raise Exception('Wrong size udp packet!')
-        elif data_len > 8 :
+        elif data_len > 8:
             data = data[54:62]
         self.p.udp.unpack(data)
 
-    def unpack_message(self,message):
+    def unpack_message(self, data):
         self.p.msg.unpack(data[62:])
 
-    def get_message(self, data):
+    def get_message(self):
         return self.p.msg
 
     def get_connection_info(self):

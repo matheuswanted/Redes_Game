@@ -6,12 +6,12 @@ from Commom.Packet import *
 from Commom.ConnectionInfo import *
 from Commom.Utils import *
 from Queue import *
-import thread 
+import thread
 import threading
 import copy
 
-SRC_MAC = '4c:eb:42:36:49:94'
-SRC_IP6 = '2999::68c6:3003:ea12:59cb'
+
+
 class Server:
 
     def __init__(self):
@@ -37,7 +37,7 @@ class Server:
         return ex
 
     def start(self):
-        thread.start_new_thread(self.receiver,())
+        thread.start_new_thread(self.receiver, ())
         while True:
             if self.queue.qsize() < 1:
                 continue
@@ -53,40 +53,51 @@ class Server:
         while True:
             if self.is_exiting():
                 thread.exit()
-                
+
             data = s.receive(filterObj)
             if data:
+                print "recebido GameMessage"
+                print data[0].message
                 self.queue.put_nowait(data)
 
     def handle(self, message, info):
-        message = ''
+        print "handling"
+        return_message = ''
         player = self.get_player(message.ip6.src_addr)
         if message.msg.action == join:
-            self.login_player(message.msg.player, message.ip6.src_addr)
+            return_message = self.login_player(message.msg.player, message.ip6.src_addr)
+
         elif message.msg.action == check:
-            message = self.check(player, message.msg.item_id)
+            return_message = self.check(player, message.msg.item_id)
+
         elif message.msg.action == move:
-            message = self.move(player, message.direction)
+            return_message = self.move(player, message.direction)
+
         elif message.msg.action == take:
-            message = self.take(player, message.item)
+            return_message = self.take(player, message.item)
+
         elif message.msg.action == drop:
-            message = self.drop(player, message.item)
+            return_message = self.drop(player, message.item)
+
         elif message.msg.action == inventory:
-            message = self.inventory(player)
+            return_message = self.inventory(player)
+
         elif message.msg.action == use:
-            message = self.use(player, message.item)
+            return_message = self.use(player, message.item)
+
         elif message.msg.action == speak:
-            message = self.speak(player, message.message)
+            return_message = self.speak(player, message.message)
+
         elif message.msg.action == whisper:
-            message = self.whisper(player, message.message)
+            return_message = self.whisper(player, message.message)
 
-        self.s.send(message, info)
-
+        self.s.send(return_message, info)
 
     def init_rooms(self):
         r = Room("Calabouco")
         r.add_item(Item(1, "Cama com colchao", False, None))
-        r.add_item(Item(2, "Jarro de agua", True, Item(3, "Chave sala 1", True, None)))
+        r.add_item(Item(2, "Jarro de agua", True,
+                        Item(3, "Chave sala 1", True, None)))
         r.add_item(Item(4, "Copo de plastico", True, None))
         self.rooms.append(copy.copy(r))
 
@@ -96,7 +107,8 @@ class Server:
         r.add_item(Item(7, "Saco de roupas sujas", True, None))
         r.add_item(Item(8, "Balde vazio", True, None))
         r.add_item(Item(9, "Garrafa quebrada", True, None))
-        r.add_item(Item(10, "Caixa de fosforos", True, Item(11, "Chave sala 2", True, None)))
+        r.add_item(Item(10, "Caixa de fosforos", True,
+                        Item(11, "Chave sala 2", True, None)))
         r.add_item(Item(12, "Vela acesa", True, None))
         r.add_item(Item(13, "Martelo", True, None))
         self.rooms.append(copy.copy(r))
@@ -105,7 +117,8 @@ class Server:
         r.add_item(Item(14, "Mesa com pratos quebrados", False, None))
         r.add_item(Item(15, "Lustre de velas", False, None))
         r.add_item(Item(16, "Parede cheia de quadros", False, None))
-        r.add_item(Item(17, "Cristaleira com portas cadeadas", False, Item(18, "Chave sala 3", True, None)))
+        r.add_item(Item(17, "Cristaleira com portas cadeadas",
+                        False, Item(18, "Chave sala 3", True, None)))
         r.add_item(Item(19, "Machado", False, None))
         self.rooms.append(copy.copy(r))
 
@@ -113,14 +126,17 @@ class Server:
         r.add_item(Item(20, "Fogao a lenha", False, None))
         r.add_item(Item(21, "Pilha de lenha no canto da sala", False, None))
         r.add_item(Item(22, "Facas espalhadas pelo chao", False, None))
-        r.add_item(Item(23, "Garfos fincados em frutas em cima da mesa", False, None))
+        r.add_item(
+            Item(23, "Garfos fincados em frutas em cima da mesa", False, None))
         r.add_item(Item(24, "Uma chaleira em cima do fogao a lenha", True, None))
-        r.add_item(Item(25, "Uma gaveta entreaberta", False, Item(26, "Chave sala 4", True, None)))
-        
+        r.add_item(Item(25, "Uma gaveta entreaberta", False,
+                        Item(26, "Chave sala 4", True, None)))
+
         self.rooms.append(copy.copy(r))
 
         r = Room("Jardim dos Fundos do Castelo")
-        r.add_item(Item(27, "Fonte com a estatua de anjos sem cabeca", False, Item(28, "Chave sala 5", True, None)))
+        r.add_item(Item(27, "Fonte com a estatua de anjos sem cabeca",
+                        False, Item(28, "Chave sala 5", True, None)))
         r.add_item(Item(29, "Uma caixa de ferramentas", True, None))
         r.add_item(Item(30, "Uma arvore sem folhas", False, None))
         r.add_item(Item(31, "Um limpador de piscina", False, None))
@@ -129,11 +145,11 @@ class Server:
     def login_player(self, name, ip):
         if self.get_player(ip):
             return False
-        
+
         self.players[ip] = Player(name, ip)
         return True
 
-    def get_player(ip):
+    def get_player(self, ip):
         if self.players.has_key(ip):
             return self.players[ip]
         return None
@@ -141,26 +157,26 @@ class Server:
     def check(self, player, item_id):
         # TODO
         return "hello check"
-        #if not player:
+        # if not player:
         #    return ""
 
         #room = self.rooms[player.room]
 
-        #if item_id is None:
+        # if item_id is None:
         #    return room.items
 
         #item = room.get_item(item_id)
 
-        #if item.item:
+        # if item.item:
         #    return item.item
-        
-        #return ""
+
+        # return ""
 
     def move(self, player, direction):
         # TODO
         if not player:
             return ""
-        
+
         return "hello move"
 
     def take(self, player, item):
@@ -187,9 +203,10 @@ class Server:
         # TODO
         return "hello whisper"
 
+
 if __name__ == "__main__":
     serv = Server()
-    
+
     #serv.login_player("Almir", "xalala")
 
     #serv.check("xalala", 2)

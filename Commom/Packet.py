@@ -2,11 +2,12 @@ import socket
 from struct import *
 from ConnectionInfo import *
 
+
 class Ethernet:
     def __init__(self):
         self.src = None
         self.dst = None
-        self.eth_type = 34525 #86dd - ipv6
+        self.eth_type = 34525  # 86dd - ipv6
 
     def setSrc(self, src):
         self.src = src
@@ -17,8 +18,9 @@ class Ethernet:
     def pack(self):
         return pack('!6s6sH', self.dst, self.src, self.eth_type)
 
-    def unpack(self,data):
-        self.dst, self.src, self.eth_type = unpack("!6s6sH",data)
+    def unpack(self, data):
+        self.dst, self.src, self.eth_type = unpack("!6s6sH", data)
+
 
 class IPV6:
     def __init__(self):
@@ -26,7 +28,7 @@ class IPV6:
         self.traffic_class = 0
         self.flow_label = 0
         self.payload = 0
-        self.next_header = 17 #UDP fixed
+        self.next_header = 17  # UDP fixed
         self.hop_limit = 64
         self.src_addr = None
         self.dst_addr = None
@@ -41,7 +43,9 @@ class IPV6:
         return pack('!BBHHBB16s16s', self.version, self.traffic_class, self.flow_label, self.payload, self.next_header, self.hop_limit, self.src_addr, self.dst_addr)
 
     def unpack(self, data):
-        self.version, self.traffic_class, self.flow_label, self.payload, self.next_header, self.hop_limit, self.src_addr, self.dst_addr = unpack("!BBHHBB16s16s",data)
+        self.version, self.traffic_class, self.flow_label, self.payload, self.next_header, self.hop_limit, self.src_addr, self.dst_addr = unpack(
+            "!BBHHBB16s16s", data)
+
 
 class Udp:
     def __init__(self):
@@ -52,30 +56,34 @@ class Udp:
 
     def pack(self):
         return pack('!HHHH', self.src_port, self.dst_port, self.length, self.checksum)
-    
-    def unpack(self, data):
-        self.src_port, self.dst_port, self.length, self.checksum = unpack('!HHHH', data)
 
-class AppMessage:
-    def __init__(self, action=None):
+    def unpack(self, data):
+        self.src_port, self.dst_port, self.length, self.checksum = unpack(
+            '!HHHH', data)
+
+
+class GameMessage:
+    def __init__(self, action=None, msg=''):
         self.action = action
+        self.message = msg
 
     def pack(self):
-        return pack('!B',self.action)
+        return pack('!B', self.action) + self.message
 
     def unpack(self, msg):
-        self.action = unpack('!B',msg)
+        self.action, self.message = unpack('!B', msg[0:1]), msg[1:]
+
 
 class Packet:
     def __init__(self):
         self.eth = Ethernet()
         self.ip6 = IPV6()
         self.udp = Udp()
-        self.msg = AppMessage()
+        self.msg = GameMessage()
         self.ip6.payload += self.udp.length
 
     def pack(self):
         return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg.pack()
 
     def get_connection_info(self):
-        return ConnectionInfo(self.eth.dst ,self.eth.src, self.ip6.dst_addr, self.ip6.src_ip)
+        return ConnectionInfo(self.eth.dst, self.eth.src, self.ip6.dst_addr, self.ip6.src_addr)
