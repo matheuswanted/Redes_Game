@@ -25,16 +25,6 @@ class Server:
         self.exiting = False
         self.lock = threading.Lock()
 
-    def start(self):
-        thread.start_new_thread(self.receiver,())
-        while True:
-            if self.queue.qsize() < 1:
-                continue
-
-            message, info = self.queue.get(True)
-            self.queue.task_done()
-            self.handle(message, info)
-
     def exit(self):
         self.lock.acquire()
         self.exiting = True
@@ -45,6 +35,16 @@ class Server:
         ex = self.exiting
         self.lock.release()
         return ex
+
+    def start(self):
+        thread.start_new_thread(self.receiver,())
+        while True:
+            if self.queue.qsize() < 1:
+                continue
+
+            message, info = self.queue.get(True)
+            self.queue.task_done()
+            self.handle(message, info)
 
     def receiver(self):
         s = Socket()

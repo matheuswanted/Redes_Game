@@ -1,5 +1,6 @@
 import socket
 from struct import *
+from ConnectionInfo import *
 
 class Ethernet:
     def __init__(self):
@@ -77,4 +78,4 @@ class Packet:
         return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg.pack()
 
     def get_connection_info(self):
-        return None
+        return ConnectionInfo(self.eth.dst ,self.eth.src, self.ip6.dst_addr, self.ip6.src_ip)
