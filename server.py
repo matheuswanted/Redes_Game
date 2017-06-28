@@ -1,97 +1,74 @@
 from Server.player import *
 from Server.room import *
 from Server.item import *
-from Commom.Socket import *
-from Commom.Packet import *
 from Commom.ConnectionInfo import *
 from Commom.Utils import *
-from Queue import *
-import thread
-import threading
+from QueueListener import *
 import copy
 
 
-
-class Server:
+class Server(AsyncQueueListener):
 
     def __init__(self):
+        AsyncQueueListener.__init__(self)
         self.rooms = []
         self.players = dict()
 
         self.init_rooms()
 
-        self.queue = Queue()
-        self.s = Socket()
-        self.exiting = False
-        self.lock = threading.Lock()
-
-    def exit(self):
-        self.lock.acquire()
-        self.exiting = True
-        self.lock.release()
-
-    def is_exiting(self):
-        self.lock.acquire()
-        ex = self.exiting
-        self.lock.release()
-        return ex
-
     def start(self):
+        src_ip = to_net_addr(SERVER_IP6)
+        dst_ip = 0
+        src_mac = to_mac_str(SRC_MAC)
+        dst_mac = 0
+        self.update_connection(src_mac, dst_mac, src_ip, dst_ip)
         thread.start_new_thread(self.receiver, ())
         while True:
-            if self.queue.qsize() < 1:
-                continue
-
-            message, info = self.queue.get(True)
-            self.queue.task_done()
-            self.handle(message, info)
-
-    def receiver(self):
-        s = Socket()
-        info = ConnectionInfo(to_mac_str(SRC_MAC), 0, to_net_addr(SRC_IP6), 0)
-        filterObj = PacketFilter(info)
-        while True:
-            if self.is_exiting():
-                thread.exit()
-
-            data = s.receive(filterObj)
-            if data:
-                print "recebido GameMessage"
-                print data[0].message
-                self.queue.put_nowait(data)
+            self.handle_events()
 
     def handle(self, message, info):
-        print "handling"
-        return_message = ''
-        player = self.get_player(message.ip6.src_addr)
-        if message.msg.action == join:
-            return_message = self.login_player(message.msg.player, message.ip6.src_addr)
+        #print "handling"
+        #Ja vem a conexao de saida, dst e o src que enviou a mensagem
+        info.src_mac = self.connection.src_mac
+        ip_key = to_str_addr(info.dst_ip)
 
-        elif message.msg.action == check:
-            return_message = self.check(player, message.msg.item_id)
+        reply = GameMessage(message.action,0)
+        #print "reply done -- " + str(message.action)
+        #print ip_key
+        player = self.get_player(ip_key)
+        #print 'hello'
 
-        elif message.msg.action == move:
-            return_message = self.move(player, message.direction)
+        if message.action == join:
+            #print message
+            x = decode_json(message.message)
+           # print 'decoded'
+            reply.status = self.login_player(x.player, ip_key)
+            reply.message = 'logged'
+        elif message.action == check:
+            reply.message = self.check(player, message.item_id)
 
-        elif message.msg.action == take:
-            return_message = self.take(player, message.item)
+        elif message.action == move:
+            reply.message = self.move(player, message.direction)
 
-        elif message.msg.action == drop:
-            return_message = self.drop(player, message.item)
+        elif message.action == take:
+            reply.message = self.take(player, message.item)
 
-        elif message.msg.action == inventory:
-            return_message = self.inventory(player)
+        elif message.action == drop:
+            reply.message = self.drop(player, message.item)
 
-        elif message.msg.action == use:
-            return_message = self.use(player, message.item)
+        elif message.action == inventory:
+            reply.message = self.inventory(player)
 
-        elif message.msg.action == speak:
-            return_message = self.speak(player, message.message)
+        elif message.action == use:
+            reply.message = self.use(player, message.item)
 
-        elif message.msg.action == whisper:
-            return_message = self.whisper(player, message.message)
+        elif message.action == speak:
+            reply.message = self.speak(player, message.message)
 
-        self.s.send(return_message, info)
+        elif message.action == whisper:
+            reply.message = self.whisper(player, message.message)
+        
+        self.s.send(reply, info)
 
     def init_rooms(self):
         r = Room("Calabouco")
@@ -144,10 +121,10 @@ class Server:
 
     def login_player(self, name, ip):
         if self.get_player(ip):
-            return False
+            return FAIL
 
         self.players[ip] = Player(name, ip)
-        return True
+        return SUCCESS
 
     def get_player(self, ip):
         if self.players.has_key(ip):
@@ -212,6 +189,11 @@ if __name__ == "__main__":
     #serv.check("xalala", 2)
     try:
         serv.start()
-    except:
-        print sys.exc_info()[0]
+    except KeyboardInterrupt as k:
+        pass
+    except Exception as e:
+        raise e
+    finally:
+        print '\nexiting'
         serv.exit()
+

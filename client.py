@@ -1,80 +1,55 @@
 import thread
 from Commom.Utils import *
-from Commom.Socket import *
-from Commom.Packet import *
-from Queue import *
-import thread
-import threading
+from QueueListener import *
 
 
-class Client:
+class Client(AsyncQueueListener):
 
     def __init__(self):
+        AsyncQueueListener.__init__(self)
         self.x = ""
-        self.s = Socket()
-        self.queue = Queue()
-        self.exiting = False
-        self.lock = threading.Lock()
+        self.joined = False
+        self.wait = False
 
     def game(self):
-        #src_ip = raw_input('Insira o IP do servidor destino:\n')
+        self.help()
+        dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
+
+        username = raw_input('Insira o nome de jogador:\n')
+        #username = 'm'
+        dst_ip = to_net_addr(dst_ip)
         src_ip = to_net_addr(SRC_IP6)
         src_mac = to_mac_str(SRC_MAC)
-
-        #username = raw_input('Insira o nome de jogador:\n')
-        username = 'm'
-        c = ConnectionInfo(src_mac, src_mac, src_ip, src_ip)
-        #nfo = ConnectionInfo(to_mac_str('4c:eb:42:36:49:94'), to_mac_str('08:00:27:c0:8e:ad'), to_net_addr("fe80::1c10:334e:4ab2:af3d"), to_net_addr("fe80::42e6:72aa:2c16:5041"))
-
-        self.s.send(GameMessage(join, 'hello'), c)
+        dst_mac = to_mac_str(STANDART_MULTICAST_MAC)
+        self.update_connection(src_mac, dst_mac, src_ip, dst_ip, True)
+        #print 'send now!'
+        #print '{player:\''+username+'\'}'
+        g = GameMessage(join, REQUEST, '{"player": "'+username+'"}')
+        self.s.send(g, self.connection)
+        self.start()
 
     def start(self):
         thread.start_new_thread(self.receiver, ())
-        self.help()
-        self.game()
-        wait = False
+        wait = True
         while True:
-            self.handle_events(wait)
-            action = raw_input('>>')
-            wait = self.do_action(action)
+            self.handle_events()
+            if not self.wait_server():
+                action = raw_input('>>')
+                wait = self.do_action(action)
 
-    def do_action(self,action):
+    def wait_server(self):
+        return not self.joined or self.wait
+
+    def do_action(self, action):
         return False
 
-    def handle_events(self, wait):
-        if not wait and self.queue.qsize() < 1:
-            return
-        message, info = self.queue.get(True)
-        self.queue.task_done()
-        self.handle(message, info)
-
     def handle(self, message, info):
-        pass
-
-    def exit(self):
-        self.lock.acquire()
-        self.exiting = True
-        self.lock.release()
-
-    def is_exiting(self):
-        self.lock.acquire()
-        ex = self.exiting
-        self.lock.release()
-        return ex
-
-    def receiver(self):
-        s = Socket()
-        info = ConnectionInfo(to_mac_str(SRC_MAC), 0, to_net_addr(SRC_IP6), 0)
-        filterObj = PacketFilter(info)
-        while True:
-            if self.is_exiting():
-                thread.exit()
-
-            data = s.receive(filterObj)
-            if data:
-                print "recebido GameMessage"
-                print data[0].message
-                self.queue.put_nowait(data)
+        if message.action == join:
+            if message.status == SUCCESS:
+                print 'joined'
+                self.joined = True
+            else:
+                raise Exception('Cannot connect to server!')
 
     def help(self):
         # TODO: listar todos os comandos
@@ -107,7 +82,11 @@ class Client:
 if __name__ == "__main__":
     c = Client()
     try:
-        c.start()
-    except:
-        print sys.exc_info()[0]
+        c.game()
+    except KeyboardInterrupt as k:
+        pass
+    except Exception as e:
+        raise e
+    finally:
+        print '\nexiting'
         c.exit()

@@ -23,10 +23,14 @@ class Socket:
 
     def send(self, message, connection_info):
         # removed buildUdp, fixed packet
+        print 'sending'
         data_pack = PacketBuilder()
         data_pack.buildEth(connection_info.src_mac, connection_info.dst_mac)
+        print 'vou quebrar?'
         data_pack.buildIp6(connection_info.src_ip, connection_info.dst_ip)
+        print 'vou quebrar?'
         data_pack.buildMsg(message)
+        print 'vou quebrar?'
         data_pack = data_pack.pack()
         print data_pack.encode('hex')
         self.s.sendto(data_pack, (INTERFACE_NAME, 0))

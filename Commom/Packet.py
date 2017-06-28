@@ -63,15 +63,18 @@ class Udp:
 
 
 class GameMessage:
-    def __init__(self, action=None, msg=''):
+    def __init__(self, action=None,status=None, msg=''):
         self.action = action
+        self.status = status
         self.message = msg
 
     def pack(self):
-        return pack('!B', self.action) + self.message
+        return pack('!BB', self.action, self.status) + self.message
 
     def unpack(self, msg):
-        self.action, self.message = unpack('!B', msg[0:1]), msg[1:]
+        msg_limit = 2
+        self.action, self.status = unpack('!BB', msg[0:msg_limit])
+        self.message = msg[msg_limit:]
 
 
 class Packet:
