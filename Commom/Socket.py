@@ -39,7 +39,8 @@ class Socket:
         network_data = self.s.recv(2048)
         encoded = network_data.encode('hex')
         src_mac = encoded[12:24]
-
+        if src_mac == '080027c08ead':
+            print src_mac
         builder = PacketBuilder()
         if network_data and packetFilter.filter(builder, network_data):
             return builder.get_message(), builder.get_connection_info()

@@ -17,7 +17,7 @@ class Server(AsyncQueueListener):
         self.init_rooms()
 
     def start(self):
-        src_ip = to_net_addr(SERVER_IP6)
+        src_ip = to_net_addr(SRC_IP6)
         dst_ip = 0
         src_mac = to_mac_str(SRC_MAC)
         dst_mac = 0
@@ -32,7 +32,7 @@ class Server(AsyncQueueListener):
         info.src_mac = self.connection.src_mac
         ip_key = to_str_addr(info.dst_ip)
 
-        reply = GameMessage(message.action,0)
+        reply = GameMessage(message.action, 0)
         #print "reply done -- " + str(message.action)
         #print ip_key
         player = self.get_player(ip_key)
@@ -45,8 +45,13 @@ class Server(AsyncQueueListener):
             reply.status = self.login_player(x.player, ip_key)
             reply.message = 'logged'
         elif message.action == check:
-            reply.message = self.check(player, message.item_id)
+            d = decode_json(message.message)
 
+            if d.target == 'sala':
+                reply.message = self.check(player)
+            else:
+                reply.message = self.check(player, d.target)
+            
         elif message.action == move:
             reply.message = self.move(player, message.direction)
 
@@ -131,23 +136,27 @@ class Server(AsyncQueueListener):
             return self.players[ip]
         return None
 
-    def check(self, player, item_id):
+    def check(self, player, item_id=None):
         # TODO
-        return "hello check"
-        # if not player:
-        #    return ""
+        #return "hello check"
+        if not player:
+           return ""
 
-        #room = self.rooms[player.room]
+        room = self.rooms[player.room]
 
-        # if item_id is None:
-        #    return room.items
+        if item_id is None:
+            r = ''
+            for i in room.items:
+                r += '(' + str(i.id) + ') - ' + str(i.name)
+                r += '\n'
+            return r
 
-        #item = room.get_item(item_id)
+        item = room.get_item(item_id)
 
-        # if item.item:
-        #    return item.item
+        if item.item:
+           return item.item
 
-        # return ""
+        return ""
 
     def move(self, player, direction):
         # TODO

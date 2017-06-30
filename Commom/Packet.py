@@ -1,7 +1,7 @@
 import socket
 from struct import *
 from ConnectionInfo import *
-
+from Commom.Utils import *
 
 class Ethernet:
     def __init__(self):
@@ -63,19 +63,27 @@ class Udp:
 
 
 class GameMessage:
-    def __init__(self, action=None,status=None, msg=''):
+    def __init__(self, action=None, status=None, msg=''):
         self.action = action
         self.status = status
         self.message = msg
 
     def pack(self):
-        return pack('!BB', self.action, self.status) + self.message
+        p = str(self.action) + ';' + str(self.status) + ';'
+        
+        if type(self.message) is dict or type(self.message) is list:
+            p += encode_json(self.message)
+        else:
+            p += str(self.message)
+            
+        return p
 
     def unpack(self, msg):
-        msg_limit = 2
-        self.action, self.status = unpack('!BB', msg[0:msg_limit])
-        self.message = msg[msg_limit:]
+        arr_msg = msg.split(';')
 
+        self.action = int(arr_msg[0])
+        self.status = int(arr_msg[1])
+        self.message = arr_msg[2]
 
 class Packet:
     def __init__(self):

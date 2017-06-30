@@ -13,18 +13,26 @@ class Client(AsyncQueueListener):
 
     def game(self):
         self.help()
-        dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
+        #dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
 
-        username = raw_input('Insira o nome de jogador:\n')
-        #username = 'm'
+        dst_ip = 'fe80::42e6:72aa:2c16:5041'# 'fe80::1c10:334e:4ab2:af3d'
+
+        dst_mac = '08:00:27:c0:8e:ad'# '4c:eb:42:36:49:94'
+
+        #dst_mac = raw_input('\n\nInsira o MAC do servidor destino:\n')
+
+        #username = raw_input('Insira o nome de jogador:\n')
+        username = 'testandooo'
+
         dst_ip = to_net_addr(dst_ip)
+        dst_mac = to_mac_str(dst_mac)
+
         src_ip = to_net_addr(SRC_IP6)
         src_mac = to_mac_str(SRC_MAC)
-        dst_mac = to_mac_str(STANDART_MULTICAST_MAC)
+        
         self.update_connection(src_mac, dst_mac, src_ip, dst_ip, True)
-        #print 'send now!'
-        #print '{player:\''+username+'\'}'
-        g = GameMessage(join, REQUEST, '{"player": "'+username+'"}')
+        
+        g = GameMessage(join, REQUEST, encode_json({ 'player' : username}))
         self.s.send(g, self.connection)
         self.start()
 
@@ -41,6 +49,19 @@ class Client(AsyncQueueListener):
         return not self.joined or self.wait
 
     def do_action(self, action):
+
+        args = action.split(' ')
+        act = int(args[0])
+
+        if act == check:
+            g = GameMessage(act, REQUEST, encode_json({'target' : args[1]}))
+            self.s.send(g, self.connection)
+            return True
+
+        elif act == help:
+            self.help()
+            return False
+
         return False
 
     def handle(self, message, info):
@@ -50,34 +71,36 @@ class Client(AsyncQueueListener):
                 self.joined = True
             else:
                 raise Exception('Cannot connect to server!')
+        elif message.action == check:
+            print 'retorno do check recebido'
+            self.wait = False
+            pass
 
     def help(self):
         # TODO: listar todos os comandos
         print "Lista de comandos diponiveis no jogo: \n "
-        print " > Examinar [sala/objeto] "
+        print " > (2) Examinar [sala/objeto] "
         print "     o Retorna a descricao da sala atual (sala) ou objeto mencionado. "
-        print " > Mover [N/S/L/O] "
         print "     o A descricao da sala tambem deve listar as salas adjacentes e suas respectivas direcoes, objetos e demais jogadores presentes no local."
-        print " > Mover [N/S/L/O] "
+        print " > (3) Mover [N/S/L/O] "
         print "     o O jogador deve mover-se para a direcao indicada (norte, sul, leste ou oeste)."
         print "     o Ao entrar numa nova sala, o jogo deve executar automaticamente o comando 'examinar sala', que descreve o novo ambiente ao jogador."
-        print " > Pegar [objeto] "
+        print " > (4) Pegar [objeto] "
         print "     o O jogador coleta um objeto que esta na sala atual."
         print "     o Alguns objetos nao podem ser coletados, como no caso de 'porta'. "
-        print " > Largar [objeto] "
+        print " > (5) Largar [objeto] "
         print "     o O jogador larga um objeto que esta no seu inventorio, na sala atual."
-        print " > Inventorio "
+        print " > (6) Inventario "
         print "     o O jogo lista todos os objetos carregados atualmente pelo jogador. "
-        print " > Usar [objeto] {alvo} "
+        print " > (7) Usar [objeto] {alvo} "
         print "     o O jogador usa o objeto mencionado; "
         print "     o Em alguns casos especificos, o objeto indicado necessitara de outro (alvo) para ser ativado (ex: usar chave porta)."
-        print " > Falar [texto] "
+        print " > (8) Falar [texto] "
         print "     o O jogador envia um texto que sera retransmitido para todos os jogadores presentes na sala atual. "
-        print " > Cochichar [texto] [jogador] "
+        print " > (9) Cochichar [texto] [jogador] "
         print "     o O jogador envia uma mensagem de texto apenas para o jogador especificado, se ambos estiverem na mesma sala."
-        print " > Ajuda "
+        print " > (10) Ajuda "
         print "     o Lista todos os comandos possiveis do jogo."
-
 
 if __name__ == "__main__":
     c = Client()
