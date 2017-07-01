@@ -1,20 +1,15 @@
 from Server.player import *
-from Server.room import *
-from Server.item import *
 from Commom.ConnectionInfo import *
 from Commom.Utils import *
 from QueueListener import *
-import copy
 
 
 class Server(AsyncQueueListener):
 
     def __init__(self):
         AsyncQueueListener.__init__(self)
-        self.rooms = []
         self.players = dict()
-
-        self.init_rooms()
+        self.rooms = get_rooms()
 
     def start(self):
         src_ip = to_net_addr(SRC_IP6)
@@ -42,7 +37,7 @@ class Server(AsyncQueueListener):
             #print message
             x = decode_json(message.message)
            # print 'decoded'
-            reply.status = self.login_player(x.player, ip_key)
+            reply.status = self.login_player(x.player, ip_key, info.src_mac.encode('hex'))
             reply.message = 'logged'
         elif message.action == check:
             d = decode_json(message.message)
@@ -59,7 +54,9 @@ class Server(AsyncQueueListener):
             reply.message = self.take(player, message.item)
 
         elif message.action == drop:
-            reply.message = self.drop(player, message.item)
+            d = decode_json(message.message)
+
+            reply.message = self.drop(player, d.target)
 
         elif message.action == inventory:
             reply.message = self.inventory(player)
@@ -68,67 +65,26 @@ class Server(AsyncQueueListener):
             reply.message = self.use(player, message.item)
 
         elif message.action == speak:
-            reply.message = self.speak(player, message.message)
+            players = self.speak(player)
 
+            d = decode_json(message.message)
+
+            reply.message = str(player.name) + ' falou: ' + str(d.target)
+            for p in players:
+                self.s.send(reply, ConnectionInfo(to_mac_str(SRC_MAC), to_mac_str(p.mac), to_net_addr(SRC_IP6), to_net_addr(p.ip) ))
+
+            return None
         elif message.action == whisper:
             reply.message = self.whisper(player, message.message)
         
         self.s.send(reply, info)
 
-    def init_rooms(self):
-        r = Room("Calabouco")
-        r.add_item(Item(1, "Cama com colchao", False, None))
-        r.add_item(Item(2, "Jarro de agua", True,
-                        Item(3, "Chave sala 1", True, None)))
-        r.add_item(Item(4, "Copo de plastico", True, None))
-        self.rooms.append(copy.copy(r))
-
-        r = Room("Sala de Tortura")
-        r.add_item(Item(5, "Cadeira de ferro", False, None))
-        r.add_item(Item(6, "Equipamento de choque", True, None))
-        r.add_item(Item(7, "Saco de roupas sujas", True, None))
-        r.add_item(Item(8, "Balde vazio", True, None))
-        r.add_item(Item(9, "Garrafa quebrada", True, None))
-        r.add_item(Item(10, "Caixa de fosforos", True,
-                        Item(11, "Chave sala 2", True, None)))
-        r.add_item(Item(12, "Vela acesa", True, None))
-        r.add_item(Item(13, "Martelo", True, None))
-        self.rooms.append(copy.copy(r))
-
-        r = Room("Sala de Jandar")
-        r.add_item(Item(14, "Mesa com pratos quebrados", False, None))
-        r.add_item(Item(15, "Lustre de velas", False, None))
-        r.add_item(Item(16, "Parede cheia de quadros", False, None))
-        r.add_item(Item(17, "Cristaleira com portas cadeadas",
-                        False, Item(18, "Chave sala 3", True, None)))
-        r.add_item(Item(19, "Machado", False, None))
-        self.rooms.append(copy.copy(r))
-
-        r = Room("Cozinha")
-        r.add_item(Item(20, "Fogao a lenha", False, None))
-        r.add_item(Item(21, "Pilha de lenha no canto da sala", False, None))
-        r.add_item(Item(22, "Facas espalhadas pelo chao", False, None))
-        r.add_item(
-            Item(23, "Garfos fincados em frutas em cima da mesa", False, None))
-        r.add_item(Item(24, "Uma chaleira em cima do fogao a lenha", True, None))
-        r.add_item(Item(25, "Uma gaveta entreaberta", False,
-                        Item(26, "Chave sala 4", True, None)))
-
-        self.rooms.append(copy.copy(r))
-
-        r = Room("Jardim dos Fundos do Castelo")
-        r.add_item(Item(27, "Fonte com a estatua de anjos sem cabeca",
-                        False, Item(28, "Chave sala 5", True, None)))
-        r.add_item(Item(29, "Uma caixa de ferramentas", True, None))
-        r.add_item(Item(30, "Uma arvore sem folhas", False, None))
-        r.add_item(Item(31, "Um limpador de piscina", False, None))
-        self.rooms.append(copy.copy(r))
-
-    def login_player(self, name, ip):
-        if self.get_player(ip):
+    def login_player(self, name, ip, mac):
+        player = self.get_player(ip)
+        if player and player.name != name:
             return FAIL
 
-        self.players[ip] = Player(name, ip)
+        self.players[ip] = Player(name, ip, mac)
         return SUCCESS
 
     def get_player(self, ip):
@@ -137,8 +93,6 @@ class Server(AsyncQueueListener):
         return None
 
     def check(self, player, item_id=None):
-        # TODO
-        #return "hello check"
         if not player:
            return ""
 
@@ -147,16 +101,27 @@ class Server(AsyncQueueListener):
         if item_id is None:
             r = ''
             for i in room.items:
-                r += '(' + str(i.id) + ') - ' + str(i.name)
+                r += i.to_string()
                 r += '\n'
             return r
 
-        item = room.get_item(item_id)
+        item = room.get_item(int(item_id))
+
+        # TODO: remover isso
+        if item.id == 1:
+            return 'mapa'
+
+        if item is None:
+            return "objeto n encontrado"
 
         if item.item:
-           return item.item
+            player.inventory.append(item.item)
+            if 'Chave' in item.item.name:
+                return 'Voce encontrou: ' + item.item.to_string() 
+            else:
+                return item.item
 
-        return ""
+        return "nada encontrado"
 
     def move(self, player, direction):
         # TODO
@@ -166,29 +131,61 @@ class Server(AsyncQueueListener):
         return "hello move"
 
     def take(self, player, item):
-        # TODO
-        return "hello take"
+        
+        room = self.rooms[player.room]
+
+        if item is None:
+            return ''
+
+        item = room.get_item(int(item))
+
+        if item is None:
+            return 'objeto n encontrado'
+
+        if item.isCollectable:
+            player.inventory.append(item)
+            return 'voce pegou: ' + item.to_string()
+        else:
+            return 'item nao e coletavel'
+
+        return 'nada encontrado'
 
     def drop(self, player, item):
-        # TODO
-        return "hello drop"
+        if item is None:
+            return ''
+        
+        item = int(item)
+
+        for i in range(len(player.inventory)):
+            if player.inventory[i].id == item:
+                del player.inventory[i]
+                return 'Item removido'
+
+        return 'voce nao tem o item ' + item
 
     def inventory(self, player):
-        # TODO
-        return "hello invetory"
+        r = ''
+        for item in player.inventory:
+            r += item.to_string()
+            r += '\n'
+        return r
 
     def use(self, player, item):
         # TODO
         return "hello item"
 
-    def speak(self, player, message):
-        # TODO
-        return "hello speak"
+    def speak(self, player):
+        players = []
+
+        for p in self.players:
+            if self.players[p].room == player.room:
+                players.append(self.players[p])
+
+        return players
 
     def whisper(self, player, message):
         # TODO
         return "hello whisper"
-
 
 if __name__ == "__main__":
     serv = Server()
@@ -196,13 +193,13 @@ if __name__ == "__main__":
     #serv.login_player("Almir", "xalala")
 
     #serv.check("xalala", 2)
-    try:
-        serv.start()
-    except KeyboardInterrupt as k:
-        pass
-    except Exception as e:
-        raise e
-    finally:
-        print '\nexiting'
-        serv.exit()
+    #try:
+    serv.start()
+    #except KeyboardInterrupt as k:
+    #    pass
+    #except Exception as e:
+    #    raise e
+    #finally:
+    #    print '\nexiting'
+    #    serv.exit()
 

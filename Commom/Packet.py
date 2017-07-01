@@ -1,4 +1,5 @@
 import socket
+import inspect
 from struct import *
 from ConnectionInfo import *
 from Commom.Utils import *
@@ -71,7 +72,7 @@ class GameMessage:
     def pack(self):
         p = str(self.action) + ';' + str(self.status) + ';'
         
-        if type(self.message) is dict or type(self.message) is list:
+        if type(self.message) is not str or type(self.message) is list:
             p += encode_json(self.message)
         else:
             p += str(self.message)

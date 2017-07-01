@@ -26,21 +26,21 @@ class Socket:
         print 'sending'
         data_pack = PacketBuilder()
         data_pack.buildEth(connection_info.src_mac, connection_info.dst_mac)
-        print 'vou quebrar?'
+        #print 'vou quebrar?'
         data_pack.buildIp6(connection_info.src_ip, connection_info.dst_ip)
-        print 'vou quebrar?'
+        #print 'vou quebrar?'
         data_pack.buildMsg(message)
-        print 'vou quebrar?'
+        #print 'vou quebrar?'
         data_pack = data_pack.pack()
-        print data_pack.encode('hex')
+        #print data_pack.encode('hex')
         self.s.sendto(data_pack, (INTERFACE_NAME, 0))
 
     def receive(self, packetFilter):
         network_data = self.s.recv(2048)
         encoded = network_data.encode('hex')
         src_mac = encoded[12:24]
-        if src_mac == '080027c08ead':
-            print src_mac
+        # if src_mac == '080027c08ead':
+        #     print src_mac
         builder = PacketBuilder()
         if network_data and packetFilter.filter(builder, network_data):
             return builder.get_message(), builder.get_connection_info()

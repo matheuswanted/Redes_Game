@@ -70,13 +70,13 @@ class AsyncQueueListener:
                 thread.exit()
 
             if self.connection_updated():
-                print 'updated'
+                #print 'updated'
                 filterObj = self.create_filter()
 
             data = s.receive(filterObj)
             if data:
-                print "recebido GameMessage"
-                print data[0].message
+                # print "recebido GameMessage"
+                # print data[0].message
                 self.queue.put_nowait(data)
 
     def exit(self):
