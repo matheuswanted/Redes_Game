@@ -14,7 +14,7 @@ class Socket:
         try:
             #s = socket.socket(socket.AF_INET6, socket.SOCK_RAW)
             # socket.ntohs(0x0003) --> ETH_P_ALL
-            print socket.gethostbyname(socket.gethostname())
+            # print socket.gethostbyname(socket.gethostname())
             self.s = socket.socket(
                 socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
         except socket.error, msg:
@@ -23,7 +23,7 @@ class Socket:
 
     def send(self, message, connection_info):
         # removed buildUdp, fixed packet
-        print 'sending'
+        # print 'sending'
         data_pack = PacketBuilder()
         data_pack.buildEth(connection_info.src_mac, connection_info.dst_mac)
         #print 'vou quebrar?'
@@ -39,8 +39,8 @@ class Socket:
         network_data = self.s.recv(2048)
         encoded = network_data.encode('hex')
         src_mac = encoded[12:24]
-        # if src_mac == '080027c08ead':
-        #     print src_mac
+        if src_mac == '080027c08ead':
+            x = src_mac
         builder = PacketBuilder()
         if network_data and packetFilter.filter(builder, network_data):
             return builder.get_message(), builder.get_connection_info()

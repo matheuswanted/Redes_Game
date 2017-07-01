@@ -45,6 +45,6 @@ class PacketFilter:
 
     def filter_ping(self,pack_builder):
         protocol = unpack("!B", network_data[23])[0]
-        print protocol
+        #print protocol
         return  protocol == 0x001
 

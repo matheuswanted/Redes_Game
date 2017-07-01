@@ -2,6 +2,7 @@ from Server.player import *
 from Commom.ConnectionInfo import *
 from Commom.Utils import *
 from QueueListener import *
+import threading
 
 
 class Server(AsyncQueueListener):
@@ -10,6 +11,7 @@ class Server(AsyncQueueListener):
         AsyncQueueListener.__init__(self)
         self.players = dict()
         self.rooms = get_rooms()
+        self.socket = Socket()
 
     def start(self):
         src_ip = to_net_addr(SRC_IP6)
@@ -17,7 +19,12 @@ class Server(AsyncQueueListener):
         src_mac = to_mac_str(SRC_MAC)
         dst_mac = 0
         self.update_connection(src_mac, dst_mac, src_ip, dst_ip)
-        thread.start_new_thread(self.receiver, ())
+
+        threadRecv = threading.Thread(target=self.receiver, args=(self.socket,))
+        threadRecv.start()
+
+        print 'Server running'
+
         while True:
             self.handle_events()
 
@@ -71,13 +78,13 @@ class Server(AsyncQueueListener):
 
             reply.message = str(player.name) + ' falou: ' + str(d.target)
             for p in players:
-                self.s.send(reply, ConnectionInfo(to_mac_str(SRC_MAC), to_mac_str(p.mac), to_net_addr(SRC_IP6), to_net_addr(p.ip) ))
+                self.socket.send(reply, ConnectionInfo(to_mac_str(SRC_MAC), to_mac_str(p.mac), to_net_addr(SRC_IP6), to_net_addr(p.ip) ))
 
             return None
         elif message.action == whisper:
             reply.message = self.whisper(player, message.message)
         
-        self.s.send(reply, info)
+        self.socket.send(reply, info)
 
     def login_player(self, name, ip, mac):
         player = self.get_player(ip)

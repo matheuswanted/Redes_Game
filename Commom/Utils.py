@@ -100,10 +100,8 @@ SUCCESS = 1
 REQUEST = 2
 
 
-INTERFACE_NAME = 'enp6s0'#wlp3s0'
+INTERFACE_NAME = 'wlp3s0'
 #Server variables
 
-STANDART_MULTICAST_MAC = '33:33:01:02:03:04'
-SRC_MAC = '84:8f:69:bf:bd:eb'#4c:eb:42:36:49:94'
-SRC_IP6 = 'fe80::bcb6:cdb1:6bcb:84b7'#'fe80::1c10:334e:4ab2:af3d'
-SERVER_IP6 = 'fe80::42e6:72aa:2c16:5041'
+SRC_MAC = '4c:eb:42:36:49:94'
+SRC_IP6 = 'fe80::1c10:334e:4ab2:af3d'

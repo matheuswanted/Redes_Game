@@ -14,7 +14,6 @@ class AsyncQueueListener:
         self.lock = threading.Lock()
         self.lock_conn = threading.Lock()
         self.connection = ConnectionInfo(0, 0, 0, 0)
-        self.s = Socket()
 
     def update_connection(self, src_mac, dst_mac, src_ip, dst_ip, ignore_loop_back=False):
         self.lock_conn.acquire()
@@ -46,13 +45,14 @@ class AsyncQueueListener:
         return upd_conn
 
     def handle_events(self):
-        if self.queue.qsize() < 1:
-            #print 'sleeping'
-            time.sleep(0.5)
-            return
-        message, info = self.queue.get(True)
-        self.queue.task_done()
-        self.handle(message, info)
+
+        while True:
+            if self.queue.qsize() < 1:
+                time.sleep(0.5)
+                continue
+            message, info = self.queue.get(True)
+            self.queue.task_done()
+            self.handle(message, info)
 
     def handle(self, message, info):
         pass
@@ -62,8 +62,7 @@ class AsyncQueueListener:
         info = self.get_connection()
         return PacketFilter(info)
 
-    def receiver(self):
-        s = Socket()
+    def receiver(self, socket):
         filterObj = self.create_filter()
         while True:
             if self.is_exiting():
@@ -73,7 +72,7 @@ class AsyncQueueListener:
                 #print 'updated'
                 filterObj = self.create_filter()
 
-            data = s.receive(filterObj)
+            data = socket.receive(filterObj)
             if data:
                 # print "recebido GameMessage"
                 # print data[0].message
