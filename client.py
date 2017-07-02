@@ -129,7 +129,7 @@ class Client(AsyncQueueListener):
             return True   
 
         elif act == inventory:
-            g = GameMessage(act, REQUEST)
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
             return True        
 
@@ -161,22 +161,19 @@ class Client(AsyncQueueListener):
             return False
 
         elif act == whisper:
-            player2 = raw_input('Digite o nome do jogador que voce quer conversar:\n')[:30]
             
-            try:            
-                if not player2:
-                    print "Voce precisa digitar o nome do jogador que quer conversar, tente de novo..."
-                    return False
-            except:
-                    print "Voce precisa digitar o nome do jogador que quer conversar, tente de novo..."
-                    return False
-            
-            baseData['target'] = raw_input('Envie uma mensagem de 140 para um jogador especifico:\n')[:140]
+            baseData['target2'] = raw_input('Digite o nome do jogador que voce quer conversar:\n')
+            #[:30]  
+            # print "Voce precisa digitar o nome do jogador que quer conversar, tente de novo..."
 
-            baseDara['target2'] = player2
+            baseData['target'] = raw_input('Envie uma mensagem de 140 caracteres para um jogador especifico:\n')
+            #[:140]
+
             
             g = GameMessage(act, REQUEST, encode_json(baseData))
+
             self.socket.send(g, self.connection)
+            
             return False
 
         elif act == help:
@@ -201,15 +198,16 @@ class Client(AsyncQueueListener):
         elif message.action == check:
                 print data.message
         elif message.action == use:
-            if 'mapa' in message.message:
-                pos = int(message.message.split('-')[1])
+            if 'mapa' in data.message:
+                pos = int(data.message.split('-')[1])
                 self.drawMap(pos)
             else:
                 print data.message
         elif message.action == move:
-            if message.message == 'END_GAME':
+            if data.message == 'END_GAME':
                 print 'VOCE ESCAPOU'
                 self.exit()
+                return
             else:
                 print data.message
 

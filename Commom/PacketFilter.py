@@ -49,12 +49,12 @@ class PacketFilter:
 
     def filter_dst_src(self, ip6):
         to_me = self.connection.src_ip == ip6.dst_addr
-
+        
         multicast = to_net_addr(MULTICAST_IPV6) == ip6.dst_addr
         
         loopback_check = not self.connection.ignore_loop_back or ip6.src_addr != ip6.dst_addr
 
-        return loopback_check and to_me or and (self.connection.dst_ip == 0 or self.connection.dst_ip == ip6.src_addr)
+        return loopback_check and to_me and (self.connection.dst_ip == 0 or self.connection.dst_ip == ip6.src_addr)
 
     def filter_ping(self,pack_builder):
         protocol = unpack("!B", network_data[23])[0]

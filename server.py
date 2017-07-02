@@ -31,7 +31,6 @@ class Server(AsyncQueueListener):
 
     def handle(self, message, info):
         info.src_mac = self.connection.src_mac
-        ip_key = to_str_addr(info.dst_ip)
 
         reply = GameMessage(message.action, RESPONSE)
 
@@ -39,19 +38,21 @@ class Server(AsyncQueueListener):
 
         responseData = {}
 
-        player = self.get_player(data.player)
+        player = None
+
+        if hasattr(data, 'player'):
+            player = self.get_player(data.player)
 
         if player:
             responseData = { 'player' : player.name }
 
         if message.action == join:
+            ip_key = to_str_addr(info.dst_ip)
             reply.status = self.login_player(data.player, ip_key, info.src_mac.encode('hex'))
             responseData['player'] = data.player
             responseData['message'] = 'logged'
 
         elif message.action == check:
-            # d = decode_json(message.message)
-
             if data.target == 'sala':
                 responseData['message'] = self.check(player)
             else:
@@ -61,7 +62,6 @@ class Server(AsyncQueueListener):
             responseData['message'] = self.move(player, data.target)
 
         elif message.action == take:
-            # d = decode_json(message.message)
 
             responseData['message'] = self.take(player, data.target)
 
@@ -88,22 +88,28 @@ class Server(AsyncQueueListener):
             reply.message = encode_json(responseData)
 
             # multicast send
-            self.socket.send(reply, ConnectionInfo(to_mac_str(SRC_MAC), to_mac_str(STANDART_MULTICAST_MAC), to_net_addr(SRC_IP6), to_net_addr(MULTICAST_IPV6) ))
-
-            return None
+            info.dst_mac = to_mac_str(MULTICAST_MAC)
+            info.dst_ip = to_net_addr(MULTICAST_IPV6)
             
         elif message.action == whisper:
             reply.status = SUCCESS
 
             responseData['message'] = str(player.name) + ' falou: ' + str(data.target)
 
-            p = self.whisper(player)
+            p = self.whisper(player, data.target2)
 
-            self.socket.send(reply, ConnectionInfo(to_mac_str(SRC_MAC), to_mac_str(p.mac), to_net_addr(SRC_IP6), to_net_addr(p.ip) ))
+            if p:
+                responseData['player'] = p.name
 
-            return None
-        
+                info.dst_mac = to_mac_str(p.mac)
+                info.dst_ip = to_net_addr(p.ip)
+            else:
+                responseData['message'] = 'Jogador nao esta na sala'
+
+
         reply.message = encode_json(responseData)
+
+        #TODO: enviar em multicast feedback do comandos
         self.socket.send(reply, info)
 
     def login_player(self, name, ip, mac):
@@ -243,15 +249,13 @@ class Server(AsyncQueueListener):
 
         return players
 
-    def whisper(self, player):
-        p = None
+    def whisper(self, player, targetPlayer):
 
         for p in self.players:
-            if self.players[p].room == player.room:
-                p = self.players[p]
-                break
+            if self.players[p].room == player.room and self.players[p].name == targetPlayer:
+                return self.players[p]
 
-        return p
+        return None
 
 if __name__ == "__main__":
     serv = Server()
