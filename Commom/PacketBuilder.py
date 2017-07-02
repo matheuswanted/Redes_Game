@@ -21,9 +21,6 @@ class PacketBuilder:
 
     def buildMsg(self, message):
         size = len(message.pack())
-        # sys.getsizeof(message.pack())
-        #print "size: " + str(size)
-        #print "msg: " + str(message)
         self.p.msg = message
         self.p.udp.length += size
         self.p.ip6.payload = self.p.udp.length

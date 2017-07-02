@@ -84,7 +84,11 @@ class GameMessage:
 
         self.action = int(arr_msg[0])
         self.status = int(arr_msg[1])
-        self.message = arr_msg[2]
+
+        if '{' in arr_msg[2]:
+            self.message = decode_json(arr_msg[2])
+        else:
+            self.message = arr_msg[2]
 
 class Packet:
     def __init__(self):

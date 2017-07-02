@@ -3,6 +3,7 @@ import threading
 import sys
 from Commom.Utils import *
 from QueueListener import *
+import random
 
 
 from colorama import init
@@ -30,21 +31,21 @@ class Client(AsyncQueueListener):
         self.wait = False
         self.lock = threading.Lock()
         self.socket = Socket()
+        self.username = None
 
     def game(self):
         self.help()
         #dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
 
-        dst_ip = 'fe80::42e6:72aa:2c16:5041'# 'fe80::1c10:334e:4ab2:af3d'
-
-        dst_mac = '08:00:27:c0:8e:ad'# '4c:eb:42:36:49:94'
+        dst_ip = 'fe80::42e6:72aa:2c16:5041'
+        dst_mac = '08:00:27:c0:8e:ad'
 
         cprint(figlet_format('Castle Escape!'), 'yellow', 'on_blue', attrs=['bold'])
 
         #dst_mac = raw_input('\n\nInsira o MAC do servidor destino:\n')
 
         #username = raw_input('Insira o nome de jogador:\n')
-        username = 'testandooo'
+        self.username = 'testando' + str( random.randint(0, 100))
 
         dst_ip = to_net_addr(dst_ip)
         dst_mac = to_mac_str(dst_mac)
@@ -52,12 +53,13 @@ class Client(AsyncQueueListener):
         src_ip = to_net_addr(SRC_IP6)
         src_mac = to_mac_str(SRC_MAC)
         
-        self.update_connection(src_mac, dst_mac, src_ip, dst_ip, True)
+        # self.update_connection(src_mac, dst_mac, src_ip, dst_ip, True)
+        self.connection = ConnectionInfo(src_mac, dst_mac, src_ip, dst_ip, False, self.username)
 
-        threadRecv = threading.Thread(target = self.receiver, args=(self.socket,))
+        threadRecv = threading.Thread(target = self.receiver, args=(self.socket, self.connection,))
         threadRecv.start()
         
-        g = GameMessage(join, REQUEST, encode_json({ 'player' : username}))
+        g = GameMessage(join, REQUEST, encode_json({ 'player' : self.username}))
 
         self.socket.send(g, self.connection)
 
@@ -77,6 +79,9 @@ class Client(AsyncQueueListener):
             else:
                 time.sleep(0.5)
 
+            if self.is_exiting():
+                return
+
     def wait_server(self):
         self.lock.acquire()
         value = not self.joined or self.wait
@@ -94,25 +99,32 @@ class Client(AsyncQueueListener):
                 return False            
         except:
             print "Essa acao nao existe e voce segue preso na sala, tente de novo. Digite o numero correspondente a acao"            
-            return False            
+            return False
+
+        baseData = { 'player' : self.username }
 
         if act == check:
-            g = GameMessage(act, REQUEST, encode_json({'target' : args[1]}))
+            baseData['target'] = args[1]
+            
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
             return True
 
         elif act == move:
-            g = GameMessage(act, REQUEST, encode_json({'target' : args[1]}))
+            baseData['target'] = args[1].upper()
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
             return True
         
         elif act == take:
-            g = GameMessage(act, REQUEST, encode_json({'target' : args[1]}))
+            baseData['target'] = args[1]
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
             return True
         
         elif act == drop:
-            g = GameMessage(act, REQUEST, encode_json({'target' : args[1]}))
+            baseData['target'] = args[1]
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
             return True   
 
@@ -122,7 +134,12 @@ class Client(AsyncQueueListener):
             return True        
 
         elif act == use:
-            g = GameMessage(act, REQUEST, encode_json({'target' : args[1] , 'target2' : args[2]}))
+
+            baseData['target'] = args[1]
+            if len(args) > 2:
+                baseData['target2'] = args[2]
+
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
             return True
 
@@ -135,10 +152,13 @@ class Client(AsyncQueueListener):
             except:
                     print "Voce precisa digitar alguma coisa, tente de novo..."
                     return False
+
+            baseData['target'] = texto
                         
-            g = GameMessage(act, REQUEST, encode_json({'target' : texto}))
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
-            return True
+
+            return False
 
         elif act == whisper:
             player2 = raw_input('Digite o nome do jogador que voce quer conversar:\n')[:30]
@@ -151,10 +171,13 @@ class Client(AsyncQueueListener):
                     print "Voce precisa digitar o nome do jogador que quer conversar, tente de novo..."
                     return False
             
-            texto = raw_input('Envie uma mensagem de 140 para um jogador especifico:\n')[:140]
-            g = GameMessage(act, REQUEST, encode_json({'target' : texto , 'target2' : player2}))
+            baseData['target'] = raw_input('Envie uma mensagem de 140 para um jogador especifico:\n')[:140]
+
+            baseDara['target2'] = player2
+            
+            g = GameMessage(act, REQUEST, encode_json(baseData))
             self.socket.send(g, self.connection)
-            return True
+            return False
 
         elif act == help:
             self.help()
@@ -163,6 +186,12 @@ class Client(AsyncQueueListener):
         return False
 
     def handle(self, message, info):
+
+        data = {}
+
+        if hasattr(message.message, 'player'):
+            data = message.message
+
         if message.action == join:
             if message.status == SUCCESS:
                 print 'joined'
@@ -170,14 +199,26 @@ class Client(AsyncQueueListener):
             else:
                 raise Exception('Cannot connect to server!')
         elif message.action == check:
-            if message.message == "mapa":
-                self.drawMap()
+                print data.message
+        elif message.action == use:
+            if 'mapa' in message.message:
+                pos = int(message.message.split('-')[1])
+                self.drawMap(pos)
             else:
-                print message.message
+                print data.message
+        elif message.action == move:
+            if message.message == 'END_GAME':
+                print 'VOCE ESCAPOU'
+                self.exit()
+            else:
+                print data.message
 
-            self.lock.acquire()
-            self.wait = False
-            self.lock.release()
+        elif data.message:
+            print data.message
+
+        self.lock.acquire()
+        self.wait = False
+        self.lock.release()
         
         
     def help(self):
@@ -210,24 +251,28 @@ class Client(AsyncQueueListener):
         print " 2 1 (esse comando examina o objeto de id 1)."        
         print " 2 1 (esse comando examina o objeto de id 1)."
 
-    def drawMap(self):
+    def drawMap(self, player_pos):
+        arr = [' ',' ',' ',' ',' ']
+        arr[player_pos] = 'X'
+
+
         cprint("______________                 _____________________",'yellow', 'on_blue', attrs=['bold']) 
         cprint("|             |                |                    |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|   Cozinha   |                |     Jardim do      |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|   Room 4    |                |     Fundos do      |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|             |________________|     Castelo        |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|              ________________                     |",'yellow', 'on_blue', attrs=['bold'])     
-        cprint("|             |                |                    |",'yellow', 'on_blue', attrs=['bold'])
+        cprint("|     " + arr[3] + "       |                |        " + arr[4] + "           |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|             |                |       Room 5       |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|             |                |_________xxx________|",'yellow', 'on_blue', attrs=['bold'])
-        cprint("______||______|_____________",'yellow', 'on_blue', attrs=['bold']) 
+        cprint("|_____||______|_____________",'yellow', 'on_blue', attrs=['bold']) 
         cprint("|     ||      |             |           FIM!        ",'yellow', 'on_blue', attrs=['bold'])
         cprint("|             |   Sala de   |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|  Room 3     |   Tortura   |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|             |             |",'yellow', 'on_blue', attrs=['bold'])
-        cprint("|           (   )  Room 2   |",'yellow', 'on_blue', attrs=['bold'])
+        cprint("|    " + arr[2] + "             Room 2   |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|             |             |",'yellow', 'on_blue', attrs=['bold'])
-        cprint("|  Sala de    |             |",'yellow', 'on_blue', attrs=['bold'])
+        cprint("|  Sala de    |      " + arr[1] + "      |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|   Jantar    |             |",'yellow', 'on_blue', attrs=['bold'])
         cprint("|_____________|______||_____|",'yellow', 'on_blue', attrs=['bold']) 
         cprint("              |      ||     |",'yellow', 'on_blue', attrs=['bold'])
@@ -236,7 +281,7 @@ class Client(AsyncQueueListener):
         cprint("              |  Calabouco  |",'yellow', 'on_blue', attrs=['bold'])
         cprint("              |    Room 1   |",'yellow', 'on_blue', attrs=['bold'])
         cprint("              |             |",'yellow', 'on_blue', attrs=['bold'])
-        cprint("              |             |",'yellow', 'on_blue', attrs=['bold'])
+        cprint("              |      " + arr[0] + "      |",'yellow', 'on_blue', attrs=['bold'])
         cprint("              |_____________|",'yellow', 'on_blue', attrs=['bold'])
 
         return True
