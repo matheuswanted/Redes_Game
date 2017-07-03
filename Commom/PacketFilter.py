@@ -54,7 +54,7 @@ class PacketFilter:
         
         loopback_check = not self.connection.ignore_loop_back or ip6.src_addr != ip6.dst_addr
 
-        return loopback_check and to_me and (self.connection.dst_ip == 0 or self.connection.dst_ip == ip6.src_addr)
+        return loopback_check and (to_me or multicast) and (self.connection.dst_ip == 0 or self.connection.dst_ip == ip6.src_addr)
 
     def filter_ping(self,pack_builder):
         protocol = unpack("!B", network_data[23])[0]
