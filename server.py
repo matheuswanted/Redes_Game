@@ -32,6 +32,12 @@ class Server(AsyncQueueListener):
     def handle(self, message, info):
         info.src_mac = self.connection.src_mac
 
+        infoMulticast = copy.copy(info)
+        infoMulticast.dst_ip = to_net_addr(MULTICAST_IPV6)
+        infoMulticast.dst_mac = to_mac_str(MULTICAST_MAC)
+        replyMulticast = GameMessage(message.action, RESPONSE)
+        multicastMsg = None
+
         reply = GameMessage(message.action, RESPONSE)
 
         data = message.message
@@ -48,7 +54,7 @@ class Server(AsyncQueueListener):
 
         if message.action == join:
             ip_key = to_str_addr(info.dst_ip)
-            reply.status = self.login_player(data.player, ip_key, info.src_mac.encode('hex'))
+            reply.status, multicastMsg = self.login_player(data.player, ip_key, info.dst_mac.encode('hex'))
             responseData['player'] = data.player
             responseData['message'] = 'logged'
 
@@ -106,20 +112,25 @@ class Server(AsyncQueueListener):
             else:
                 responseData['message'] = 'Jogador nao esta na sala'
 
-
+        # envio da resposata para solicitante
         reply.message = encode_json(responseData)
-
-        #TODO: enviar em multicast feedback do comandos
         self.socket.send(reply, info)
+
+        # feedback do comandos para players na sala
+        if multicastMsg is not None and len(self.get_players_room(self.get_player(data.player))) > 0:
+            responseMulticast = { 'message' : multicastMsg }
+            responseMulticast['player'] = self.get_players_room(self.get_player(data.player))
+            replyMulticast.message = encode_json(responseMulticast)
+            self.socket.send(replyMulticast, infoMulticast)
 
     def login_player(self, name, ip, mac):
         player = self.get_player(name)
 
         if player and player.ip != ip:
-            return FAIL
+            return FAIL, None
 
         self.players[name] = Player(name, ip, mac)
-        return SUCCESS
+        return SUCCESS, str(name) + ' entrou no jogo' 
 
     def get_player(self, name):
         if self.players.has_key(name):
@@ -242,20 +253,24 @@ class Server(AsyncQueueListener):
 
     def speak(self, player):
         players = ''
-
         for p in self.players:
             if self.players[p].room == player.room:
                 players += p + ' - '
-
         return players
 
     def whisper(self, player, targetPlayer):
-
         for p in self.players:
             if self.players[p].room == player.room and self.players[p].name == targetPlayer:
                 return self.players[p]
 
         return None
+
+    def get_players_room(self, player):
+        players = ''
+        for p in self.players:
+            if self.players[p].room == player.room and self.players[p].name != player.name:
+                players += p + ' - '
+        return players
 
 if __name__ == "__main__":
     serv = Server()
