@@ -27,8 +27,7 @@
              Uma porta de ferro de saída
              
     * Onde está a chave: Dentro do jarro de água
-    * Como pegar a chave: PEGAR o jarro;
-                          USAR [jarro] {copo} 
+    * Como pegar a chave: USAR [copo] {jarro}
     
 ### Sala de Tortura - Sala 2 
     Objetos: Uma cadeira de ferro;

@@ -1,3 +1,4 @@
+import copy
 
 class Player:
 
@@ -7,7 +8,6 @@ class Player:
         self.mac = mac
         self.room = 0
         self.inventory = []
-        self.openDoors = dict()
     
     def get_item(self, id):
         for i in self.inventory:
@@ -16,19 +16,21 @@ class Player:
     
     def remove_item(self, id):
         for i in range(len(self.inventory)):
-            if self.inventory[i].id == item:
+            if self.inventory[i].id == id:
+                item = copy.copy(self.inventory[i])
                 del self.inventory[i]
-                return True
+                return item
+        return False
     
     def move(self, rooms_items, direction):
         response = -1
 
-        for r in rooms_items:
-            if 'Porta ' + str(direction) in r.name:
+        for item in rooms_items:
+            if 'Porta ' + str(direction) in item.name:
                 response = 0
-                if self.openDoors.has_key(r.id):
+                if item.unlocked == True:
                     response = 1
-                    self.room = r.out_door
+                    self.room = item.out_door
                     break
 
         return response

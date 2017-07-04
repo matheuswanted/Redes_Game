@@ -34,27 +34,31 @@ class Client(AsyncQueueListener):
         self.username = None
 
     def game(self):
-        self.help()
-        
         src_ip6, src_mac = self.socket.get_ip_mac()
 
-        #dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
+        #dst_ip = 'fe80::1c10:334e:4ab2:af3d' #'fe80::42e6:72aa:2c16:5041'
 
-        dst_ip = 'fe80::42e6:72aa:2c16:5041'
+        #dst_mac = '4c:eb:42:36:49:94' #'08:00:27:c0:8e:ad'
 
-        dst_mac = '08:00:27:c0:8e:ad'
+        #self.username = 'testando' + str( random.randint(0, 100))
+
+        dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
+
+        dst_mac = raw_input('\n\nInsira o MAC do servidor destino:\n')
+
+        self.username = raw_input('\n\nInsira o nome de jogador:\n')
+
+        self.username = self.username.replace(' ','_')
+
+        print '\n\n'
 
         cprint(figlet_format('Castle Escape!'), 'yellow', 'on_blue', attrs=['bold'])
 
-        #dst_mac = raw_input('\n\nInsira o MAC do servidor destino:\n')
-
-        #username = raw_input('Insira o nome de jogador:\n')
-        self.username = 'testando' + str( random.randint(0, 100))
+        print 'conectando...'
 
         dst_ip = to_net_addr(dst_ip)
         dst_mac = to_mac_str(dst_mac)
         
-        # self.update_connection(src_mac, dst_mac, src_ip, dst_ip, True)
         self.connection = ConnectionInfo(to_mac_str(src_mac), dst_mac, to_net_addr(src_ip6), dst_ip, False, self.username)
 
         threadRecv = threading.Thread(target = self.receiver, args=(self.socket, self.connection,))
@@ -152,8 +156,8 @@ class Client(AsyncQueueListener):
             return True        
 
         elif act == use:
-            if len(args) != 3:
-                print 'Essa acao nao existe ex.: usar 2 4'
+            if len(args) < 2 or len(args) > 3:
+                print 'Essa acao nao existe ex.: usar 2 ou usar 2 4'
                 return False
 
             baseData['target'] = args[1]
@@ -165,16 +169,13 @@ class Client(AsyncQueueListener):
             return True
 
         elif act == speak:
-            texto = None
+            if len(args) < 2:
+                print 'Essa acao nao existe ex.: falar lorem ipsum...'
+                return False
 
-            try:            
-                texto = raw_input('Envie uma mensagem de 140 caracteres(enter para enviar):\n')[:140]
-                if not texto:
-                    print "Voce precisa digitar alguma coisa, tente de novo..."
-                    return False
-            except:
-                    print "Voce precisa digitar alguma coisa, tente de novo..."
-                    return False
+            del args[0]
+
+            texto = ' '.join(str(x) for x in args)[:150]
 
             baseData['target'] = texto
                         
@@ -184,15 +185,15 @@ class Client(AsyncQueueListener):
             return False
 
         elif act == whisper:
-            try:
-                baseData['target2'] = raw_input('Digite o nome do jogador que voce quer conversar:\n')
-                #[:30]  
-                # print "Voce precisa digitar o nome do jogador que quer conversar, tente de novo..."
-                baseData['target'] = raw_input('Envie uma mensagem de 140 caracteres para um jogador especifico:\n')
-                #[:140]
-            except:
-                print 'Informacoes invalidas, tente de novo...'
+            if len(args) < 3:
+                print 'Essa acao nao existe ex.: cochichar lorem ipsum... jogador'
                 return False
+            
+            del args[0]
+            baseData['target2'] = args[len(args)-1]
+            del args[len(args)-1]
+            
+            baseData['target'] = ' '.join(str(x) for x in args)[:150]
             
             g = GameMessage(act, REQUEST, encode_json(baseData))
 
@@ -215,11 +216,13 @@ class Client(AsyncQueueListener):
 
         if message.action == join:
             if message.status == SUCCESS:
-                print 'joined'
-                self.joined = True
+                print 'Jogo iniciado \n'
+
+                self.do_action('examinar sala')
             else:
                 raise Exception('Cannot connect to server!')
         elif message.action == check:
+                self.joined = True
                 print data.message
         elif message.action == use:
             if 'mapa' in data.message:
@@ -234,6 +237,8 @@ class Client(AsyncQueueListener):
                 return
             else:
                 print data.message
+                self.do_action('examinar sala')
+                return False
 
         elif message.action == feedback:
             print 'FEEDBACK: ' + data.message
@@ -257,7 +262,7 @@ class Client(AsyncQueueListener):
         print " > FALAR [texto] "
         print " > COCHICHAR [texto] [jogador] "
         print " > AJUDA "
-        print " >> Exemplos : \n examinar sala (esse comando lista todos os objetos dentro da sala \n"
+        print " >> Exemplos : \n examinar sala (esse comando lista todos os objetos dentro da sala"
         print " examinar 1 (esse comando examina o objeto de id 1)."
 
     def drawMap(self, player_pos):

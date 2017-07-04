@@ -101,5 +101,6 @@ class Packet:
     def pack(self):
         return self.eth.pack() + self.ip6.pack() + self.udp.pack() + self.msg.pack()
 
+    # envia informacoes com origem e destinos ja alterados, facilitando consulta
     def get_connection_info(self):
         return ConnectionInfo(self.eth.dst, self.eth.src, self.ip6.dst_addr, self.ip6.src_addr)

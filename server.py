@@ -31,7 +31,6 @@ class Server(AsyncQueueListener):
 
     def handle(self, message, info):
         #Ja vem a conexao de saida, dst e o src que enviou a mensagem
-
         info.src_mac = self.connection.src_mac
 
         # infos para enviar feedback por multicast
@@ -48,6 +47,7 @@ class Server(AsyncQueueListener):
         responseData = {}
 
         player = None
+        roomPlayers = False
 
         if hasattr(data, 'player'):
             player = self.get_player(data.player)
@@ -68,6 +68,9 @@ class Server(AsyncQueueListener):
                 responseData['message'], multicastMsg = self.check(player, data.target)
             
         elif message.action == move:
+            # pega os players da sala para informar movimento
+            p = self.get_player(data.player)
+            roomPlayers = self.get_players_room(p.room, p.name)
             responseData['message'], multicastMsg = self.move(player, data.target)
 
         elif message.action == take:
@@ -120,7 +123,9 @@ class Server(AsyncQueueListener):
         self.socket.send(reply, info)
 
         # feedback do comandos para players na sala
-        roomPlayers = self.get_players_room(self.get_player(data.player))
+        if roomPlayers == False:
+            p = self.get_player(data.player)
+            roomPlayers = self.get_players_room(p.room, p.name)
         if multicastMsg is not None and len(roomPlayers) > 0:
             responseMulticast = { 'message' : multicastMsg }
             responseMulticast['player'] = roomPlayers
@@ -149,26 +154,44 @@ class Server(AsyncQueueListener):
 
         # check room items and players
         if item_id is None:
-            r = ''
+            adj_rooms = dict()
+            r = room.name + '\n'
             for i in room.items:
-                r += i.to_string()
-                r += '\n'
+                r += i.to_string() + '\n'
+                if 'Porta' in i.name:
+                    adj_rooms[i.out_door] = i.name
+            r += 'Jogadores: ' + self.get_players_room(player.room)
 
-            r += 'Jogadores: ' + self.speak(player)
+            for adj in adj_rooms:
+                room = self.rooms[adj]
+                r += '\n\n' + room.name + ' (' + adj_rooms[adj] + ')\n'
+                for it in room.items:
+                    r += it.to_string() + '\n'
+                r += 'Jogadores: ' + self.get_players_room(adj)
 
             return r, None
         
+        # objeto esta na sala
         item = room.get_item(int(item_id))
 
+        # objeto esta com player
         if item is None:
-            return "Nada encontrado", None
+            item = player.get_item(int(item_id))
 
-        if item.item:
-            player.inventory.append(item.item)
-            if 'Chave' in item.item.name:
-                return 'Voce encontrou: ' + item.item.to_string(), str(player.name) + ' encontrou: ' + item.item.to_string()
-            else:
-                return item.item, None
+        if item is None:
+            return "Objeto nao existe", None
+
+        if item.check_item():
+            i = item.get_item()
+            # se nao tem item pega
+            if not player.get_item(i.id):
+                player.inventory.append(i)
+            return 'Voce encontrou: ' + i.to_string(), str(player.name) + ' examinou ' + item.to_string() + ' e encontrou: ' + i.to_string()
+
+        if 'Porta' in item.name:
+            if item.unlocked == True:
+                return 'Porta esta destrancada', None
+            return 'Porta esta trancada', None
 
         return "Nada encontrado", None
 
@@ -180,9 +203,21 @@ class Server(AsyncQueueListener):
         if response == 1:
             if player.room == 5:
                 del self.players[player.name]
+                # reset no game quando todos sairem
+                if len(self.players) == 0:
+                    self.players = dict()
+                    self.rooms = get_rooms()
                 return 'END_GAME', str(player.name) + ' encontrou a saida'
 
-            return 'Voce esta na sala: ' + str(self.rooms[player.room].name), str(player.name) + ' entrou na sala'
+            if direction == 'N':
+                direction = 'Norte'
+            elif direction == 'S':
+                direction = 'Sul'
+            elif direction == 'L':
+                direction = 'Leste'
+            else:
+                direction = 'Oeste'
+            return 'Voce esta na sala: ' + str(self.rooms[player.room].name), str(player.name) + ' moveu-se para ' + direction
         elif response == 0:
             return 'Porta trancada', None
         else:
@@ -195,7 +230,7 @@ class Server(AsyncQueueListener):
         if item is None:
             return '', None
 
-        item = room.get_item(int(item))
+        item = room.take_item(int(item))
 
         if item is None:
             return 'Objeto nao encontrado', None
@@ -214,10 +249,15 @@ class Server(AsyncQueueListener):
         
         item = int(item)
 
-        if player.remove_item(item):
-            return 'Item removido', str(player.name) + ' soltou ' + item.to_string()
+        room = self.rooms[player.room]
 
-        return 'voce nao tem o item ' + item, None
+        item = player.remove_item(item)
+
+        if item:
+            room.add_item(item)
+            return 'Voce largou', str(player.name) + ' largou objeto ' + item.to_string()
+
+        return 'Voce nao tem este item ', None
 
     def inventory(self, player):
         r = ''
@@ -234,33 +274,39 @@ class Server(AsyncQueueListener):
 
         item = player.get_item(int(target))
 
-        if  hasattr(args, 'target2'):
+        if hasattr(args, 'target2'):
             itemTarget = room.get_item(int(args.target2))        
 
         if item is None:
-            return "Nada encontrado", None
+            return "Voce nao tem esse item", None
 
         if item.name == 'Mapa':
-            return 'mapa-' + str(player.room), None
+            return 'mapa-' + str(player.room), str(player.name) + ' usou ' + item.to_string()
 
         if itemTarget:
+            resp = itemTarget.use_item(item)
+            
             if 'Porta' in itemTarget.name and 'Chave' in item.name:
-                if str(player.room+1) in item.name:
-                    player.openDoors[itemTarget.id] = item
+                if resp:
                     return 'Voce abriu: ' + itemTarget.to_string(), str(player.name) + ' abriu ' + itemTarget.to_string()
                 else:
                     return 'Chave incorreta', None
+            else:
+                if resp:
+                    msg1 = str(player.name) + ' usou ' + item.to_string()  + ' em ' + itemTarget.to_string()
+                    player_msg, msg2 = self.check(player, itemTarget.id)
+                    
+                    if msg2 is not None:
+                        msg1 += '\n' + msg2
 
-            return itemTarget.use_item(item), str(player.name) + ' ' + itemTarget.use_item(item)
+                    return player_msg, msg1
+                else:
+                    return 'Voce usou e nada aconteceu' , str(player.name) + ' usou ' + item.to_string()  + ' em ' + itemTarget.to_string()
 
-        return "Nao e possivel usar", None
+        return 'Objeto alvo nao encontrado', None
 
     def speak(self, player):
-        players = ''
-        for p in self.players:
-            if self.players[p].room == player.room:
-                players += p + ' - '
-        return players
+        return self.get_players_room(player.room)
 
     def whisper(self, player, targetPlayer):
         for p in self.players:
@@ -269,11 +315,11 @@ class Server(AsyncQueueListener):
 
         return None
 
-    def get_players_room(self, player):
+    def get_players_room(self, room_id, player_name=False):
         players = ''
         for p in self.players:
-            if self.players[p].room == player.room and self.players[p].name != player.name:
-                players += p + ' - '
+            if self.players[p].room == room_id and self.players[p].name != player_name:
+                players += p + ', '
         return players
 
 if __name__ == "__main__":

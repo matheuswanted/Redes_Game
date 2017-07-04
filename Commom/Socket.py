@@ -47,6 +47,11 @@ class Socket:
     def get_ip_mac(self):
        if not self.ip6:
            self.mac = netifaces.ifaddresses(INTERFACE_NAME)[netifaces.AF_LINK][0]['addr']
-           ip6 = netifaces.ifaddresses(INTERFACE_NAME)[netifaces.AF_INET6][0]['addr']
-           self.ip6 = ip6[:ip6.index('%')]
+           ip6 = netifaces.ifaddresses(INTERFACE_NAME)[netifaces.AF_INET6]
+
+           for i in ip6:
+               if 'fe80' in i['addr']:
+                self.ip6 = i['addr']
+                self.ip6 = self.ip6[:self.ip6.index('%')]
+                break
        return self.ip6, self.mac
