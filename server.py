@@ -111,14 +111,18 @@ class Server(AsyncQueueListener):
             p = self.whisper(player, data.target2)
 
             if p:
-                responseData['player'] = p.name
+                # resposta para quem enviou
+                sender_reply = copy.copy(reply)
+                sender_reply.message = encode_json({'player' : player.name, 'message' : 'mensagem enviada'})
+                self.socket.send(sender_reply, info)
 
+                responseData['player'] = p.name
                 info.dst_mac = to_mac_str(p.mac)
                 info.dst_ip = to_net_addr(p.ip)
             else:
                 responseData['message'] = 'Jogador nao esta na sala'
 
-        # envio da resposata para solicitante
+        # envio da resposta para solicitante
         reply.message = encode_json(responseData)
         self.socket.send(reply, info)
 
@@ -155,7 +159,7 @@ class Server(AsyncQueueListener):
         # check room items and players
         if item_id is None:
             adj_rooms = dict()
-            r = room.name + '\n'
+            r = room.name + ' <--Voce esta aqui\n'
             for i in room.items:
                 r += i.to_string() + '\n'
                 if 'Porta' in i.name:
@@ -163,20 +167,23 @@ class Server(AsyncQueueListener):
             r += 'Jogadores: ' + self.get_players_room(player.room)
 
             for adj in adj_rooms:
-                room = self.rooms[adj]
-                r += '\n\n' + room.name + ' (' + adj_rooms[adj] + ')\n'
-                for it in room.items:
-                    r += it.to_string() + '\n'
-                r += 'Jogadores: ' + self.get_players_room(adj)
+                if adj < len(self.rooms):
+                    room = self.rooms[adj]
+                    r += '\n\n' + room.name + ' (' + adj_rooms[adj] + ')\n'
+                    for it in room.items:
+                        r += it.to_string() + '\n'
+                    r += 'Jogadores: ' + self.get_players_room(adj)
 
             return r, None
         
         # objeto esta na sala
-        item = room.get_item(int(item_id))
+        item = self.try_parse(item_id)
+
+        item = room.get_item(item)
 
         # objeto esta com player
         if item is None:
-            item = player.get_item(int(item_id))
+            item = player.get_item(self.try_parse(item_id))
 
         if item is None:
             return "Objeto nao existe", None
@@ -227,10 +234,12 @@ class Server(AsyncQueueListener):
         
         room = self.rooms[player.room]
 
+        item = self.try_parse(item)
+
         if item is None:
             return '', None
 
-        item = room.take_item(int(item))
+        item = room.take_item(item)
 
         if item is None:
             return 'Objeto nao encontrado', None
@@ -247,7 +256,10 @@ class Server(AsyncQueueListener):
         if item is None:
             return '', None
         
-        item = int(item)
+        item = self.try_parse(item)
+
+        if item is None:
+            return 'Voce nao tem este item', None
 
         room = self.rooms[player.room]
 
@@ -272,10 +284,17 @@ class Server(AsyncQueueListener):
 
         room = self.rooms[player.room]
 
-        item = player.get_item(int(target))
+        item = self.try_parse(target)
+
+        if item is None:
+            return "Voce nao tem esse item", None
+
+        item = player.get_item(item)
 
         if hasattr(args, 'target2'):
-            itemTarget = room.get_item(int(args.target2))        
+            itemTarget = self.try_parse(args.target2)
+            if itemTarget is not None:
+                itemTarget = room.get_item(itemTarget)
 
         if item is None:
             return "Voce nao tem esse item", None
@@ -315,6 +334,15 @@ class Server(AsyncQueueListener):
 
         return None
 
+    def try_parse(self, num):
+        n = None
+        try:
+            n = int(num)
+        except:
+            n = None
+        finally:
+            return n 
+
     def get_players_room(self, room_id, player_name=False):
         players = ''
         for p in self.players:
@@ -324,13 +352,14 @@ class Server(AsyncQueueListener):
 
 if __name__ == "__main__":
     serv = Server()
-    
-    try:
-        serv.start()
-    except KeyboardInterrupt as k:
-        pass
-    except Exception as e:
-        raise e
-    finally:
-        print '\nexiting'
-        serv.exit()
+    serv.start()
+
+    # try:
+    #     serv.start()
+    # except KeyboardInterrupt as k:
+    #     pass
+    # except Exception as e:
+    #     raise e
+    # finally:
+    #     print '\nexiting'
+    #     serv.exit()

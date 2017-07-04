@@ -108,6 +108,9 @@ def get_rooms():
 
     return rooms
 
+# timeout para resposta do servidor
+TIMEOUT_RESPONSE = 4
+
 #actions
 join = 1
 check = 2
@@ -127,8 +130,7 @@ SUCCESS = 1
 REQUEST = 2
 RESPONSE = 3
 
-
-INTERFACE_NAME = 'wlp3s0'
+INTERFACE_NAME = 'wlp3s0' #'enp4s0'
 
 MULTICAST_MAC = '33:33:00:00:00:01'
 MULTICAST_IPV6 = 'ff02::1'

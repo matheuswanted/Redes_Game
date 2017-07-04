@@ -36,17 +36,12 @@ class Client(AsyncQueueListener):
     def game(self):
         src_ip6, src_mac = self.socket.get_ip_mac()
 
-        #dst_ip = 'fe80::1c10:334e:4ab2:af3d' #'fe80::42e6:72aa:2c16:5041'
-
-        #dst_mac = '4c:eb:42:36:49:94' #'08:00:27:c0:8e:ad'
-
-        #self.username = 'testando' + str( random.randint(0, 100))
-
         dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
 
         dst_mac = raw_input('\n\nInsira o MAC do servidor destino:\n')
 
-        self.username = raw_input('\n\nInsira o nome de jogador:\n')
+        while not self.username or len(self.username) == 0:
+            self.username = raw_input('\n\nInsira o nome de jogador:\n')
 
         self.username = self.username.replace(' ','_')
 
@@ -75,14 +70,24 @@ class Client(AsyncQueueListener):
         threadHandle = threading.Thread(target = self.handle_events, args=())
         threadHandle.start()
 
+        timeout = 0
+
         while True:
+
+            if timeout == TIMEOUT_RESPONSE:
+                self.exit()
+                print 'Sem resposta do servidor'
+                return
+
             if not self.wait_server():
+                timeout = 0
                 action = raw_input('>>')
                 self.lock.acquire()
                 self.wait = self.do_action(action)
                 self.lock.release()
             else:
                 time.sleep(0.5)
+                timeout += 0.5
 
             if self.is_exiting():
                 return
@@ -122,7 +127,11 @@ class Client(AsyncQueueListener):
 
         elif act == move:
             if len(args) != 2:
-                print 'Essa acao nao existe ex.: mover n'
+                print 'Essa acao nao existe ex.: mover n ou mover S'
+                return False
+
+            if not args[1].upper() in 'N S L O':
+                print 'Essa acao nao existe ex.: mover n ou mover S'
                 return False
 
             baseData['target'] = args[1].upper()
@@ -199,7 +208,7 @@ class Client(AsyncQueueListener):
 
             self.socket.send(g, self.connection)
             
-            return False
+            return True
 
         elif act == help:
             self.help()
@@ -237,8 +246,9 @@ class Client(AsyncQueueListener):
                 return
             else:
                 print data.message
-                self.do_action('examinar sala')
-                return False
+                if not ('Nao' in data.message):
+                    self.do_action('examinar sala')
+                    return False
 
         elif message.action == feedback:
             print 'FEEDBACK: ' + data.message
@@ -308,5 +318,5 @@ if __name__ == "__main__":
     except Exception as e:
         raise e
     finally:
-        print '\nexiting'
+        print '\nsaindo...'
         c.exit()
