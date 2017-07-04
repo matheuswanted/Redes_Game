@@ -102,6 +102,7 @@ use = 7
 speak = 8
 whisper = 9
 help = 10
+feedback = 11
 
 #reply_enum
 FAIL = 0
@@ -113,8 +114,8 @@ RESPONSE = 3
 INTERFACE_NAME = 'wlp3s0'
 
 #Server variables
-SRC_MAC = '4c:eb:42:36:49:94'
-SRC_IP6 = 'fe80::1c10:334e:4ab2:af3d'
+#SRC_MAC = '4c:eb:42:36:49:94'
+#SRC_IP6 = 'fe80::1c10:334e:4ab2:af3d'
 
 MULTICAST_MAC = '33:33:00:00:00:01'
 MULTICAST_IPV6 = 'ff02::1'

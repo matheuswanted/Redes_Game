@@ -35,10 +35,14 @@ class Client(AsyncQueueListener):
 
     def game(self):
         self.help()
+        
+        src_ip6, src_mac = self.socket.get_ip_mac()
+
         #dst_ip = raw_input('\n\nInsira o IP do servidor destino:\n')
 
-        dst_ip = 'fe80::42e6:72aa:2c16:5041'
-        dst_mac = '08:00:27:c0:8e:ad'
+        dst_ip = 'fe80::1c10:334e:4ab2:af3d' #'fe80::42e6:72aa:2c16:5041'
+
+        dst_mac = '4c:eb:42:36:49:94' #'08:00:27:c0:8e:ad'
 
         cprint(figlet_format('Castle Escape!'), 'yellow', 'on_blue', attrs=['bold'])
 
@@ -49,12 +53,9 @@ class Client(AsyncQueueListener):
 
         dst_ip = to_net_addr(dst_ip)
         dst_mac = to_mac_str(dst_mac)
-
-        src_ip = to_net_addr(SRC_IP6)
-        src_mac = to_mac_str(SRC_MAC)
         
         # self.update_connection(src_mac, dst_mac, src_ip, dst_ip, True)
-        self.connection = ConnectionInfo(src_mac, dst_mac, src_ip, dst_ip, False, self.username)
+        self.connection = ConnectionInfo(to_mac_str(src_mac), dst_mac, to_net_addr(src_ip6), dst_ip, False, self.username)
 
         threadRecv = threading.Thread(target = self.receiver, args=(self.socket, self.connection,))
         threadRecv.start()
@@ -210,6 +211,9 @@ class Client(AsyncQueueListener):
                 return
             else:
                 print data.message
+
+        elif message.action == feedback:
+            print 'FEEDBACK: ' + data.message
 
         elif data.message:
             print data.message

@@ -1,6 +1,7 @@
 import socket
 import sys
-#import netifaces
+import netifaces
+from uuid import getnode as get_mac
 from PacketFilter import *
 from PacketBuilder import *
 from Utils import *
@@ -8,6 +9,8 @@ from Utils import *
 class Socket:
     def __init__(self):
         self.s = None
+        self.ip6 = False
+        self.mac = False
 
         try:
             self.s = socket.socket(
@@ -41,8 +44,9 @@ class Socket:
 
         return False
 
-#    def get_ip(self):
-#        if not self.ip6:
-#            self.ip6 = netifaces.ifaddresses(INTERFACE_NAME)[
-#                netifaces.AF_INET6][0]['addr']
-#        return self.ip6
+    def get_ip_mac(self):
+       if not self.ip6:
+           self.mac = netifaces.ifaddresses(INTERFACE_NAME)[netifaces.AF_LINK][0]['addr']
+           ip6 = netifaces.ifaddresses(INTERFACE_NAME)[netifaces.AF_INET6][0]['addr']
+           self.ip6 = ip6[:ip6.index('%')]
+       return self.ip6, self.mac
