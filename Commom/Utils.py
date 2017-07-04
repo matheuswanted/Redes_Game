@@ -29,8 +29,30 @@ def encode_json(obj):
 def decode_json(json_str):
     return json.loads(json_str, object_hook=decoder)
 
+def get_command(com):
+    if com == 'EXAMINAR':
+        return check
+    elif com == 'MOVER':
+        return move
+    elif com == 'PEGAR':
+        return take
+    elif com == 'LARGAR':
+        return drop
+    elif com == 'INVENTARIO':
+        return inventory
+    elif com == 'USAR':
+        return use
+    elif com ==  'FALAR':
+        speak
+    elif com == 'COCHICHAR':
+        return whisper
+    elif com == 'AJUDA':
+        help
+    else:
+        return -1
 
 def get_rooms():
+
     rooms = []
 
     r = Room("Calabouco", [1,0,0,0])
