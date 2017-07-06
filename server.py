@@ -352,14 +352,13 @@ class Server(AsyncQueueListener):
 
 if __name__ == "__main__":
     serv = Server()
-    serv.start()
 
-    # try:
-    #     serv.start()
-    # except KeyboardInterrupt as k:
-    #     pass
-    # except Exception as e:
-    #     raise e
-    # finally:
-    #     print '\nexiting'
-    #     serv.exit()
+    try:
+        serv.start()
+    except KeyboardInterrupt as k:
+        pass
+    except Exception as e:
+        raise e
+    finally:
+        print '\nexiting'
+        serv.exit()
